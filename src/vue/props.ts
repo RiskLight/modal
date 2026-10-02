@@ -39,3 +39,15 @@ export function optionalObjectProp<T>(check: (value: unknown) => value is T): Op
   const carrier = (): T | undefined => undefined
   return { type: carrier, skipCheck: true, default: undefined, validator: value => value === undefined || check(value) }
 }
+
+export interface OptionalStringProp {
+  type: PropType<string | undefined>
+  skipCheck: true
+  default: undefined
+  validator: (value: unknown) => boolean
+}
+
+export function optionalStringProp(): OptionalStringProp {
+  const carrier = (): string | undefined => undefined
+  return { type: carrier, skipCheck: true, default: undefined, validator: value => value === undefined || typeof value === 'string' }
+}

@@ -5,8 +5,8 @@ import { joinSelectors, readSelector } from './selector.js'
 export type BehaviorSource = EscapeSource & ScrollLockSource
 
 export interface BehaviorOptions {
-  escape?: boolean | EscapeOptions
-  scrollLock?: boolean | ScrollLockOptions
+  escape?: boolean | EscapeOptions | undefined
+  scrollLock?: boolean | ScrollLockOptions | undefined
 }
 
 interface Acquired {

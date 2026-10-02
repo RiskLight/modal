@@ -13,6 +13,7 @@ import type {
   ModalTarget,
   Namespace,
   NamespaceOptions,
+  NamespaceOptionsInput,
   NamespaceScope,
   NamespaceSnapshot,
   RegistryEntry,
@@ -29,7 +30,7 @@ function normalize(namespace: Namespace | undefined): Namespace {
   return namespace || DEFAULT_NAMESPACE
 }
 
-function pickOptions(config: Partial<NamespaceOptions> | undefined): Partial<NamespaceOptions> {
+function pickOptions(config: NamespaceOptionsInput | undefined): Partial<NamespaceOptions> {
   const picked: Partial<NamespaceOptions> = {}
   if (!config) return picked
   if (config.escClose !== undefined) picked.escClose = config.escClose

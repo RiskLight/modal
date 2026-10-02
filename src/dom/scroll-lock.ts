@@ -1,7 +1,7 @@
 import type { ModalManager } from '../core/types.js'
 
 export interface ScrollLockOptions {
-  target?: HTMLElement
+  target?: HTMLElement | undefined
 }
 
 interface LockState {

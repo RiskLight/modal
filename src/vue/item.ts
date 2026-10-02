@@ -20,7 +20,7 @@ import { createDialogItem, dialogLabelAttrs } from '../dom/dialog.js'
 import { isRecord } from '../core/guards.js'
 import { report } from '../core/report.js'
 import { HANDLE_KEY } from './keys.js'
-import { requiredObjectProp, unionProp } from './props.js'
+import { optionalStringProp, requiredObjectProp, unionProp } from './props.js'
 import type { BackdropTrigger, VueModalHandle } from './types.js'
 
 interface ItemExtra {
@@ -70,7 +70,7 @@ export const ModalItem = defineComponent({
     active: { type: Boolean, default: true },
     trapFocus: { type: Boolean, default: true },
     backdropTrigger: unionProp<BackdropTrigger>(['click', 'pointerdown'], 'click'),
-    allowOutside: { type: String, default: undefined },
+    allowOutside: optionalStringProp(),
   },
   setup(props) {
     const handle = props.handle

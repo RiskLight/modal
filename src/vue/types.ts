@@ -12,7 +12,7 @@ export type ModalProps<T> = MaybeRefOrGetter<ComponentProps<T>>
 export type { BackdropTrigger } from '../dom/dialog.js'
 
 export interface VueModalOptions extends ModalOptions<Component> {
-  slots?: Record<string, Slot>
+  slots?: Record<string, Slot> | undefined
 }
 
 export type ModalArgs<T> = {} extends ComponentProps<T>
@@ -37,7 +37,7 @@ export interface VueModalManager extends Omit<ModalManager<Component>, 'open' | 
 export type VueModalCreateOptions = CreateModalOptions<Component>
 
 export interface ModalRouteRecord {
-  readonly components?: Readonly<Record<string, unknown>> | null
+  readonly components?: Readonly<Record<string, unknown>> | null | undefined
 }
 
 export interface ModalRouteLocation {
@@ -57,9 +57,9 @@ export interface ModalRouterLike {
 }
 
 export interface ModalRouteOptions extends VueModalOptions {
-  mode?: 'open' | 'push'
-  props?: (route: ModalRouteLocation) => Record<string, unknown>
-  fallback?: string
+  mode?: 'open' | 'push' | undefined
+  props?: ((route: ModalRouteLocation) => Record<string, unknown>) | undefined
+  fallback?: string | undefined
 }
 
 declare module 'vue' {

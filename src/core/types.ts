@@ -35,34 +35,36 @@ export interface OpenContext<C> {
 export type BeforeOpen<C> = (context: OpenContext<C>) => void | boolean | Promise<void | boolean>
 
 export interface ModalOptions<C> {
-  namespace?: Namespace
-  backgroundClose?: boolean
-  escClose?: boolean
-  draggable?: boolean | string
-  beforeOpen?: BeforeOpen<C>
-  isRoute?: boolean
-  timeout?: number | false
-  extra?: Readonly<Record<string, unknown>>
+  namespace?: Namespace | undefined
+  backgroundClose?: boolean | undefined
+  escClose?: boolean | undefined
+  draggable?: boolean | string | undefined
+  beforeOpen?: BeforeOpen<C> | undefined
+  isRoute?: boolean | undefined
+  timeout?: number | false | undefined
+  extra?: Readonly<Record<string, unknown>> | undefined
 }
 
 export interface RegistryEntry<C> {
   component: C
-  backgroundClose?: boolean
-  escClose?: boolean
-  draggable?: boolean | string
-  timeout?: number | false
-  beforeOpen?: BeforeOpen<C>
+  backgroundClose?: boolean | undefined
+  escClose?: boolean | undefined
+  draggable?: boolean | string | undefined
+  timeout?: number | false | undefined
+  beforeOpen?: BeforeOpen<C> | undefined
 }
 
-export interface NamespaceConfig<C> extends Partial<NamespaceOptions> {
-  beforeOpen?: BeforeOpen<C>
+export type NamespaceOptionsInput = { [K in keyof NamespaceOptions]?: NamespaceOptions[K] | undefined }
+
+export interface NamespaceConfig<C> extends NamespaceOptionsInput {
+  beforeOpen?: BeforeOpen<C> | undefined
 }
 
 export interface CreateModalOptions<C> {
-  defaults?: NamespaceConfig<C>
-  namespaces?: Record<Namespace, NamespaceConfig<C>>
-  registry?: Record<string, C | RegistryEntry<C>>
-  requireHost?: boolean | ((namespace: Namespace) => boolean)
+  defaults?: NamespaceConfig<C> | undefined
+  namespaces?: Record<Namespace, NamespaceConfig<C>> | undefined
+  registry?: Record<string, C | RegistryEntry<C>> | undefined
+  requireHost?: (boolean | ((namespace: Namespace) => boolean)) | undefined
   guardFrom?: (component: C) => CloseGuard | undefined
 }
 
@@ -100,7 +102,7 @@ export interface NamespaceSnapshot<C = unknown> {
 }
 
 export interface NamespaceScope {
-  namespace?: Namespace
+  namespace?: Namespace | undefined
 }
 
 export type ModalTarget<C> = C | string

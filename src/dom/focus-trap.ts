@@ -1,15 +1,15 @@
 import { insideSelector, type SelectorSource } from './selector.js'
 
 export interface FocusTrapOptions {
-  initialFocus?: HTMLElement | string
-  fallbackFocus?: HTMLElement
-  returnFocus?: boolean
-  returnFocusTo?: HTMLElement | null
-  allowOutside?: SelectorSource
+  initialFocus?: HTMLElement | string | undefined
+  fallbackFocus?: HTMLElement | undefined
+  returnFocus?: boolean | undefined
+  returnFocusTo?: HTMLElement | null | undefined
+  allowOutside?: SelectorSource | undefined
 }
 
 export interface FocusTrapRelease {
-  returnFocus?: boolean
+  returnFocus?: boolean | undefined
 }
 
 export type ReleaseFocusTrap = (options?: FocusTrapRelease) => void

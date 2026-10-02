@@ -3,9 +3,9 @@ import type { ModalManager } from '../core/types.js'
 import { insideSelector, type SelectorSource } from './selector.js'
 
 export interface EscapeOptions {
-  target?: EventTarget
-  event?: 'keyup' | 'keydown'
-  allowOutside?: SelectorSource
+  target?: EventTarget | undefined
+  event?: 'keyup' | 'keydown' | undefined
+  allowOutside?: SelectorSource | undefined
 }
 
 function isEscape(event: KeyboardEvent): boolean {

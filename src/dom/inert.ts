@@ -1,5 +1,5 @@
 export interface InertOptions {
-  exclude?: string
+  exclude?: string | undefined
 }
 
 interface InertState {

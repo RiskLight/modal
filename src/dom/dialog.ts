@@ -16,12 +16,12 @@ export interface DialogState {
   active: boolean
   trapFocus: boolean
   backdropTrigger: BackdropTrigger
-  allowOutside?: string
+  allowOutside?: string | undefined
 }
 
 export interface DialogOptions extends Partial<DialogState> {
-  labels?: Readonly<Record<string, string>>
-  surfaceClass?: string
+  labels?: Readonly<Record<string, string>> | undefined
+  surfaceClass?: string | undefined
 }
 
 export interface DialogEvent {

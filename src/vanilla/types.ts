@@ -3,7 +3,7 @@ import type { BackdropTrigger } from '../dom/dialog.js'
 
 export interface VanillaRendered {
   element: Node
-  destroy?: () => void
+  destroy?: (() => void) | undefined
 }
 
 export type VanillaComponent<P = any> = (props: P, handle: VanillaModalHandle) => Node | string | VanillaRendered
@@ -21,15 +21,15 @@ export type VanillaModalArgs<T> = {} extends VanillaComponentProps<T>
 export type VanillaNamedModalArgs = [props?: Record<string, unknown>, options?: VanillaModalOptions]
 
 export interface MountOptions {
-  namespace?: string
-  trapFocus?: boolean
-  behaviors?: boolean
-  unstyled?: boolean
-  nonce?: string
-  backdropTrigger?: BackdropTrigger
-  escapeEvent?: 'keydown' | 'keyup'
-  allowOutside?: string
-  className?: string
+  namespace?: string | undefined
+  trapFocus?: boolean | undefined
+  behaviors?: boolean | undefined
+  unstyled?: boolean | undefined
+  nonce?: string | undefined
+  backdropTrigger?: BackdropTrigger | undefined
+  escapeEvent?: 'keydown' | 'keyup' | undefined
+  allowOutside?: string | undefined
+  className?: string | undefined
 }
 
 export interface VanillaModalManager extends Omit<ModalManager<VanillaComponent>, 'open' | 'push' | 'prompt'> {
@@ -44,5 +44,5 @@ export interface VanillaModalManager extends Omit<ModalManager<VanillaComponent>
 }
 
 export interface VanillaModalCreateOptions extends CreateModalOptions<VanillaComponent> {
-  autoMount?: boolean | Element | string
+  autoMount?: boolean | Element | string | undefined
 }

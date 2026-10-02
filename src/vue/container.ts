@@ -14,7 +14,7 @@ import { joinSelectors } from '../dom/selector.js'
 import { useModal, useModalSnapshot } from './composables.js'
 import { ModalItem } from './item.js'
 import { injectStyles } from './styles.js'
-import { optionalObjectProp, unionProp } from './props.js'
+import { optionalObjectProp, optionalStringProp, unionProp } from './props.js'
 import { isRecord } from '../core/guards.js'
 import type { BackdropTrigger, VueModalManager } from './types.js'
 
@@ -34,10 +34,10 @@ export const ModalContainer = defineComponent({
     trapFocus: { type: Boolean, default: true },
     behaviors: { type: Boolean, default: true },
     unstyled: { type: Boolean, default: false },
-    nonce: { type: String, default: undefined },
+    nonce: optionalStringProp(),
     backdropTrigger: unionProp<BackdropTrigger>(['click', 'pointerdown'], 'click'),
     escapeEvent: unionProp<'keydown' | 'keyup'>(['keydown', 'keyup'], 'keydown'),
-    allowOutside: { type: String, default: undefined },
+    allowOutside: optionalStringProp(),
   },
   setup(props) {
     const manager = props.manager ?? useModal()

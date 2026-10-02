@@ -29,13 +29,13 @@ export interface ReactModalManager extends Omit<ModalManager<ReactModalComponent
 export type ReactModalCreateOptions = CreateModalOptions<ReactModalComponent>
 
 export interface ModalContainerProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
-  namespace?: string
-  manager?: ReactModalManager
-  trapFocus?: boolean
-  behaviors?: boolean
-  unstyled?: boolean
-  nonce?: string
-  backdropTrigger?: BackdropTrigger
-  escapeEvent?: 'keydown' | 'keyup'
-  allowOutside?: string
+  namespace?: string | undefined
+  manager?: ReactModalManager | undefined
+  trapFocus?: boolean | undefined
+  behaviors?: boolean | undefined
+  unstyled?: boolean | undefined
+  nonce?: string | undefined
+  backdropTrigger?: BackdropTrigger | undefined
+  escapeEvent?: 'keydown' | 'keyup' | undefined
+  allowOutside?: string | undefined
 }

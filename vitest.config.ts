@@ -7,9 +7,9 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          name: 'core',
+          name: 'node',
           environment: 'node',
-          include: ['test/core/**/*.spec.ts'],
+          include: ['test/core/**/*.spec.ts', 'test/ssr/**/*.spec.ts'],
         },
       },
       {

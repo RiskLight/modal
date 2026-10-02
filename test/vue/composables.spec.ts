@@ -144,6 +144,13 @@ describe('useModalSnapshot', () => {
     expect(snapshot.value.items).toHaveLength(0)
   })
 
+  it('works outside an effect scope', async () => {
+    const modal = createVueModal({ requireHost: false })
+    const snapshot = useModalSnapshot('x', modal)
+    await modal.push(Title, {}, { namespace: 'x' })
+    expect(snapshot.value.items).toHaveLength(1)
+  })
+
   it('injects the manager when none is passed', () => {
     const modal = createVueModal()
     let length = -1

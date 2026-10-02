@@ -126,6 +126,32 @@ describe('ModalContainer rendering', () => {
   })
 })
 
+describe('ModalContainer with real transitions', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('removes a closed modal after the leave transition', async () => {
+    const modal = createVueModal()
+    const wrapper = mount(ModalContainer, { global: { plugins: [modal], stubs: { 'transition-group': false } }, attachTo: document.body })
+    const handle = await modal.push(Title, { title: 'leaving' })
+    expect(wrapper.text()).toBe('leaving')
+    await handle.close()
+    await vi.waitFor(() => expect(wrapper.text()).toBe(''))
+  })
+
+  it('switches namespace before mount without attaching twice', async () => {
+    const modal = createVueModal({ requireHost: false })
+    const wrapper = mountContainer(modal, { namespace: 'a' })
+    await wrapper.setProps({ namespace: 'b' })
+    await wrapper.setProps({ namespace: 'a' })
+    expect(modal.isHosted('a')).toBe(true)
+    expect(modal.isHosted('b')).toBe(false)
+    wrapper.unmount()
+    expect(modal.isHosted('a')).toBe(false)
+  })
+})
+
 describe('ModalContainer props handling', () => {
   afterEach(() => {
     document.body.innerHTML = ''

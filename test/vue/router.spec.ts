@@ -113,6 +113,54 @@ describe('router integration', () => {
     }
   })
 
+  it('keeps the same modal across param changes of the same route', async () => {
+    ctx = setup()
+    await go(ctx.router, '/users/1')
+    const handle = ctx.modal.current()!
+    const guard = vi.fn()
+    handle.onBeforeClose(guard)
+    await go(ctx.router, '/users/2')
+    expect(ctx.modal.current()).toBe(handle)
+    expect(handle.closed).toBe(false)
+    expect(guard).not.toHaveBeenCalled()
+    expect(ctx.wrapper.find('.user').text()).toBe('user-2')
+  })
+
+  it('keeps the same modal across query changes', async () => {
+    ctx = setup()
+    await go(ctx.router, '/modal')
+    const handle = ctx.modal.current()!
+    await go(ctx.router, '/modal?tab=2')
+    expect(ctx.modal.current()).toBe(handle)
+  })
+
+  it('opens a fresh modal when switching to another modal route', async () => {
+    ctx = setup()
+    await go(ctx.router, '/users/1')
+    const handle = ctx.modal.current()!
+    await go(ctx.router, '/mapped/1')
+    expect(handle.closed).toBe(true)
+    expect(ctx.wrapper.find('.user').text()).toBe('user-m1')
+  })
+
+  it('reports and ignores a modal route that cannot open', async () => {
+    const reported = vi.fn()
+    const original = globalThis.reportError
+    globalThis.reportError = reported
+    try {
+      ctx = setup()
+      ctx.modal.configure({ beforeOpen: () => false })
+      await go(ctx.router, '/modal')
+      expect(ctx.router.currentRoute.value.path).toBe('/modal')
+      expect(reported).toHaveBeenCalledWith(expect.objectContaining({ code: 'before-open-rejected' }))
+      ctx.modal.configure({ beforeOpen: undefined })
+      await go(ctx.router, '/page')
+      expect(ctx.router.currentRoute.value.path).toBe('/page')
+    } finally {
+      globalThis.reportError = original
+    }
+  })
+
   it('blocks navigation when the modal guard vetoes', async () => {
     ctx = setup()
     await go(ctx.router, '/')

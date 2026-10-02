@@ -11,6 +11,7 @@ interface Definition {
 }
 
 interface ActiveRoute {
+  definition: Definition
   handle: VueModalHandle
   leaving: boolean
 }
@@ -49,10 +50,10 @@ export function installModalRouter(router: Router, manager: VueModalManager): ()
   let active: ActiveRoute | undefined
   let opening: Promise<void> = Promise.resolve()
 
-  const removeBefore = router.beforeEach(async () => {
+  const removeBefore = router.beforeEach(async to => {
     await opening
     const current = active
-    if (!current || current.handle.closed) return
+    if (!current || current.handle.closed || findModal(to) === current.definition) return
     current.leaving = true
     try {
       await current.handle.close({ route: true })
@@ -66,13 +67,13 @@ export function installModalRouter(router: Router, manager: VueModalManager): ()
   const removeAfter = router.afterEach((to, from, failure) => {
     if (failure) return
     const definition = findModal(to)
-    if (!definition) return
+    if (!definition || (active && !active.handle.closed && active.definition === definition)) return
     const { mode, props: mapProps, fallback, ...options } = definition.options
     const firstEntry = from.matched.length === 0
     const props = computed(() => (mapProps ? mapProps(router.currentRoute.value) : router.currentRoute.value.params))
     const opener = (mode === 'push' ? manager.push : manager.open) as Opener
     opening = opener(definition.component, props, { ...options, isRoute: true }).then(handle => {
-      const entry: ActiveRoute = { handle, leaving: false }
+      const entry: ActiveRoute = { definition, handle, leaving: false }
       active = entry
       handle.onClosed(() => {
         if (active === entry) active = undefined

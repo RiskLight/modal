@@ -19,6 +19,11 @@ describe('adapters stay separate', () => {
     expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]react/)
   })
 
+  it.each(files('src/vanilla'))('%s imports no framework or other adapter', path => {
+    expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"](vue|vue-router|react|react-dom)(\/[^'"]*)?['"]/)
+    expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]\.\.\/(vue|react)\//)
+  })
+
   it.each(files('src/react'))('%s does not import vue', path => {
     expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"](vue|vue-router)['"]/)
     expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]\.\.\/(vue)\//)

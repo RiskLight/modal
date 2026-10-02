@@ -52,12 +52,10 @@ describe('close guards', () => {
     const h = await m.push(A)
     const instance = { title: 't' }
     h.instance = instance
-    let seen: unknown
-    h.onBeforeClose(function (this: unknown) {
-      seen = this
-    })
+    const guard = vi.fn()
+    h.onBeforeClose(guard)
     await h.close()
-    expect(seen).toBe(instance)
+    expect(guard.mock.contexts[0]).toBe(instance)
   })
 
   it.each([undefined, true])('closes when a guard returns %s', async value => {

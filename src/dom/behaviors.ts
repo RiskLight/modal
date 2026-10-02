@@ -1,6 +1,7 @@
-import type { ModalManager } from '../core/types.js'
-import { bindEscape, type EscapeOptions } from './escape.js'
-import { bindScrollLock, type ScrollLockOptions } from './scroll-lock.js'
+import { bindEscape, type EscapeOptions, type EscapeSource } from './escape.js'
+import { bindScrollLock, type ScrollLockOptions, type ScrollLockSource } from './scroll-lock.js'
+
+export type BehaviorSource = EscapeSource & ScrollLockSource
 
 export interface BehaviorOptions {
   escape?: boolean | EscapeOptions
@@ -12,14 +13,14 @@ interface Acquired {
   release: () => void
 }
 
-const acquired = new WeakMap<ModalManager<any>, Acquired>()
+const acquired = new WeakMap<BehaviorSource, Acquired>()
 
 function pick<T extends object>(value: boolean | T | undefined): T | undefined {
   if (value === false) return undefined
   return value === true || value === undefined ? ({} as T) : value
 }
 
-export function acquireBehaviors(manager: ModalManager<any>, options: BehaviorOptions = {}): () => void {
+export function acquireBehaviors(manager: BehaviorSource, options: BehaviorOptions = {}): () => void {
   let entry = acquired.get(manager)
   if (entry) {
     entry.count++

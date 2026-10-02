@@ -1,5 +1,5 @@
-export { bindEscape, type EscapeOptions } from './escape.js'
-export { bindScrollLock, type ScrollLockOptions } from './scroll-lock.js'
+export { bindEscape, type EscapeOptions, type EscapeSource } from './escape.js'
+export { bindScrollLock, type ScrollLockOptions, type ScrollLockSource } from './scroll-lock.js'
 export { trapFocus, focusableElements, type FocusTrapOptions } from './focus-trap.js'
 export { makeDraggable } from './draggable.js'
-export { acquireBehaviors, type BehaviorOptions } from './behaviors.js'
+export { acquireBehaviors, type BehaviorOptions, type BehaviorSource } from './behaviors.js'

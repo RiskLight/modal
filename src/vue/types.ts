@@ -34,3 +34,9 @@ export interface ModalRouteOptions extends VueModalOptions {
   props?: (route: RouteLocationNormalizedLoaded) => Record<string, unknown>
   fallback?: RouteLocationRaw
 }
+
+declare module 'vue' {
+  interface ComponentCustomProperties {
+    $modal: VueModalManager
+  }
+}

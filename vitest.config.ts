@@ -17,6 +17,8 @@ export default defineConfig({
         test: {
           name: 'browser',
           environment: 'happy-dom',
+          setupFiles: ['test/setup-browser.ts'],
+          css: { include: [/style\.css/] },
           include: ['test/{dom,vue,compat}/**/*.spec.ts'],
         },
       },

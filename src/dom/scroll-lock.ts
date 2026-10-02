@@ -45,14 +45,16 @@ function unlock(target: HTMLElement): void {
   target.style.paddingRight = state.paddingRight
 }
 
-function wantsLock(manager: ModalManager<any>): boolean {
+export type ScrollLockSource = Pick<ModalManager<any>, 'namespaces' | 'getSnapshot' | 'subscribe'>
+
+function wantsLock(manager: ScrollLockSource): boolean {
   return manager.namespaces().some(namespace => {
     const snapshot = manager.getSnapshot(namespace)
     return snapshot.options.scrollLock && snapshot.items.length > 0
   })
 }
 
-export function bindScrollLock(manager: ModalManager<any>, options: ScrollLockOptions = {}): () => void {
+export function bindScrollLock(manager: ScrollLockSource, options: ScrollLockOptions = {}): () => void {
   if (typeof document === 'undefined') return () => {}
   const target = options.target ?? document.body
   let locked = false

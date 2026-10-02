@@ -9,7 +9,9 @@ function isEscape(event: KeyboardEvent): boolean {
   return event.key === 'Escape' || event.code === 'Escape'
 }
 
-export function bindEscape(manager: ModalManager<any>, options: EscapeOptions = {}): () => void {
+export type EscapeSource = Pick<ModalManager<any>, 'topmost' | 'closeById'>
+
+export function bindEscape(manager: EscapeSource, options: EscapeOptions = {}): () => void {
   if (typeof document === 'undefined') return () => {}
   const target = options.target ?? document
   const type = options.event ?? 'keyup'

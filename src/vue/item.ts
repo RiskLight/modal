@@ -74,6 +74,7 @@ export const ModalItem = defineComponent({
     }
 
     const setInstance = (instance: unknown) => {
+      if (instance === null && handle.closed) return
       handle.instance = instance
     }
 

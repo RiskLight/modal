@@ -9,7 +9,7 @@ beforeEach(async () => {
     template: `<div><container/><container namespace="${space}"/></div>`,
     components: { container },
   })
-  for (const modal of [...Modal.STORE.values()]) await modal.close().catch(() => {})
+  for (const modal of Array.from(Modal.STORE.values())) await modal.close().catch(() => {})
 })
 
 describe('Namespace tests', () => {

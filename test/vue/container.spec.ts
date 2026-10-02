@@ -115,13 +115,21 @@ describe('ModalContainer rendering', () => {
     expect(wrapper.find('.with-slots u').text()).toBe('f')
   })
 
-  it('exposes the component instance on the handle and clears it on close', async () => {
+  it('exposes the component instance and keeps the last one after close', async () => {
     const modal = createVueModal()
     mountContainer(modal)
     const handle = await modal.push(Title, { title: 'inst' })
     expect((handle.instance as { local: string }).local).toBe('local')
     await handle.close()
     await nextTick()
+    expect((handle.instance as { title: string }).title).toBe('inst')
+  })
+
+  it('clears the instance when the container unmounts with the modal still open', async () => {
+    const modal = createVueModal({ requireHost: false })
+    const wrapper = mountContainer(modal)
+    const handle = await modal.push(Title)
+    wrapper.unmount()
     expect(handle.instance).toBeNull()
   })
 })

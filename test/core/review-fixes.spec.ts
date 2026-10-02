@@ -5,7 +5,7 @@ describe('guards that close their own modal', () => {
   it('returns the in-flight promise when a guard calls close synchronously', async () => {
     const m = createModal()
     const h = await m.push(A)
-    let inner: Promise<void> | undefined
+    let inner: Promise<boolean> | undefined
     h.onBeforeClose(() => {
       inner = h.close()
     })

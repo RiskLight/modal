@@ -1,5 +1,4 @@
 import { PROMPT_EVENT } from './constants.js'
-import { ModalError } from './errors.js'
 import { report } from './report.js'
 import type {
   ModalCloseEvent,
@@ -69,7 +68,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
   #escClose: boolean | undefined
   #draggable: boolean | string
   #status: ModalStatus = 'open'
-  #closing: Promise<void> | undefined
+  #closing: Promise<boolean> | undefined
   #pending: { value: R } | undefined
   #settle!: (value: R | null) => void
   #revision = 0
@@ -138,22 +137,32 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     this.#changed()
   }
 
-  close(partial?: Partial<ModalCloseEvent>): Promise<void> {
-    if (this.#status === 'closed') return Promise.reject(this.#notFound())
+  close(partial?: Partial<ModalCloseEvent>): Promise<boolean> {
+    if (this.#status === 'closed') return Promise.resolve(false)
     if (this.#closing) return this.#closing
     const event = closeEvent(partial)
     const guards = this.#guards.map(slot => slot.fn)
-    let settle!: { resolve: () => void; reject: (error: unknown) => void }
-    const closing = new Promise<void>((resolve, reject) => {
+    let settle!: { resolve: (closed: boolean) => void; reject: (error: unknown) => void }
+    const closing = new Promise<boolean>((resolve, reject) => {
       settle = { resolve, reject }
     })
     this.#status = 'closing'
     this.#closing = closing
     this.#runGuards(guards, event).then(
-      () => {
+      allowed => {
         this.#closing = undefined
-        if (this.#status !== 'closed') this.#host.finalize(this, event)
-        settle.resolve()
+        if (this.#status === 'closed') {
+          settle.resolve(true)
+          return
+        }
+        if (!allowed) {
+          this.#status = 'open'
+          this.#pending = undefined
+          settle.resolve(false)
+          return
+        }
+        this.#host.finalize(this, event)
+        settle.resolve(true)
       },
       error => {
         this.#closing = undefined
@@ -167,8 +176,8 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     return closing
   }
 
-  resolve(value: R): Promise<void> {
-    if (this.#status === 'closed') return Promise.reject(this.#notFound())
+  resolve(value: R): Promise<boolean> {
+    if (this.#status === 'closed') return Promise.resolve(false)
     if (!this.#pending) this.#pending = { value }
     return this.close()
   }
@@ -218,7 +227,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
         report(error)
       }
     }
-    if (event === PROMPT_EVENT) this.resolve(args[0] as R).catch(() => {})
+    if (event === PROMPT_EVENT) this.resolve(args[0] as R).catch(report)
   }
 
   eventNames(): readonly string[] {
@@ -228,7 +237,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
   startTimer(): void {
     if (this.timeout === false || this.#timer !== undefined || this.closed) return
     this.#timer = setTimeout(() => {
-      this.close().catch(() => {})
+      this.close().catch(report)
     }, this.timeout)
   }
 
@@ -258,17 +267,14 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     this.#settle(pending ? pending.value : null)
   }
 
-  async #runGuards(guards: CloseGuard[], event: ModalCloseEvent): Promise<void> {
+  async #runGuards(guards: CloseGuard[], event: ModalCloseEvent): Promise<boolean> {
     for (const guard of guards) {
-      if (this.closed) return
+      if (this.closed) return true
       const verdict = await guard.call(this.instance, event)
-      if (this.closed) return
-      if (verdict === false) throw new ModalError('guard-rejected', `Closing modal ${this.id} was rejected by a close guard`, { id: this.id })
+      if (this.closed) return true
+      if (verdict === false) return false
     }
-  }
-
-  #notFound(): ModalError {
-    return new ModalError('not-found', `Modal ${this.id} is already closed`, { id: this.id })
+    return true
   }
 
   #changed(): void {

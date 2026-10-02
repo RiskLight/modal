@@ -74,13 +74,15 @@ export function installModalRouter(router: ModalRouterLike, manager: VueModalMan
     const current = active
     if (!current || current.handle.closed || findModal(to) === current.definition) return undefined
     current.leaving = true
+    let closed = false
     try {
-      await current.handle.close({ route: true })
-    } catch {
-      current.leaving = false
-      return false
+      closed = await current.handle.close({ route: true })
+    } catch (error) {
+      report(error)
     }
-    return undefined
+    if (closed) return undefined
+    current.leaving = false
+    return false
   })
 
   const register = (definition: Definition, handle: VueModalHandle, firstEntry: boolean, fallback: ModalRouteOptions['fallback']) => {

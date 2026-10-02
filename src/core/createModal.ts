@@ -186,11 +186,13 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
     return handle
   }
 
-  async function closeAll(scope: NamespaceScope = {}): Promise<void> {
+  async function closeAll(scope: NamespaceScope = {}): Promise<boolean> {
     const items = [...stack(normalize(scope.namespace))].reverse()
     for (const handle of items) {
-      if (!handle.closed) await handle.close()
+      if (handle.closed) continue
+      if (!(await handle.close()) && !handle.closed) return false
     }
+    return true
   }
 
   const openChains = new Map<Namespace, Promise<unknown>>()
@@ -199,7 +201,9 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
     const namespace = normalize(opts.namespace)
     const previous = openChains.get(namespace) ?? Promise.resolve()
     const next = previous.then(async () => {
-      await closeAll({ namespace })
+      if (!(await closeAll({ namespace }))) {
+        throw new ModalError('guard-rejected', `A close guard kept a modal open in namespace "${namespace}"`, { namespace })
+      }
       if (stack(namespace).length > 0) {
         throw new ModalError('queue-not-empty', `Namespace "${namespace}" still has open modals`, { namespace })
       }
@@ -241,12 +245,10 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
     },
     closeAll,
     pop(scope: NamespaceScope = {}) {
-      return current(scope.namespace)?.close() ?? Promise.resolve()
+      return current(scope.namespace)?.close() ?? Promise.resolve(false)
     },
     closeById(id, event) {
-      const handle = handles.get(id)
-      if (!handle) return Promise.reject(new ModalError('not-found', `Modal ${id} was not found`, { id }))
-      return handle.close(event)
+      return handles.get(id)?.close(event) ?? Promise.resolve(false)
     },
     get(id) {
       return handles.get(id)

@@ -1,3 +1,4 @@
+import { report } from '../core/report.js'
 import type { ModalCloseEvent } from '../core/types.js'
 import { makeDraggable } from './draggable.js'
 import { trapFocus, type ReleaseFocusTrap } from './focus-trap.js'
@@ -8,7 +9,7 @@ export interface DialogSource {
   readonly closed: boolean
   readonly backgroundClose: boolean
   readonly draggable: boolean | string
-  close(event?: Partial<ModalCloseEvent>): Promise<void>
+  close(event?: Partial<ModalCloseEvent>): Promise<unknown>
 }
 
 export interface DialogState {
@@ -40,8 +41,6 @@ export interface DialogItem {
 const HEADING = 'h1, h2, h3, h4, h5, h6, [role="heading"], [data-modal-title]'
 
 let headingSeed = 0
-
-function noop(): void {}
 
 function safeQuery(root: HTMLElement, selector: string): HTMLElement | null {
   try {
@@ -133,7 +132,7 @@ export function createDialogItem(handle: DialogSource, options: DialogOptions = 
   }
 
   const closeFromBackdrop = () => {
-    if (handle.backgroundClose) handle.close({ background: true }).catch(noop)
+    if (handle.backgroundClose) handle.close({ background: true }).catch(report)
   }
 
   return {

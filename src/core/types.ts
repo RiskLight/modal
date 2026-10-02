@@ -83,8 +83,8 @@ export interface ModalHandle<C = unknown, R = unknown> {
   escClose: boolean
   draggable: boolean | string
   instance: unknown
-  close(event?: Partial<ModalCloseEvent>): Promise<void>
-  resolve(value: R): Promise<void>
+  close(event?: Partial<ModalCloseEvent>): Promise<boolean>
+  resolve(value: R): Promise<boolean>
   onBeforeClose(guard: CloseGuard): () => void
   onClosed(listener: ClosedListener): () => void
   on(event: string, listener: ModalEventListener): () => void
@@ -109,9 +109,9 @@ export interface ModalManager<C = unknown> {
   open<R = unknown>(target: ModalTarget<C>, props?: unknown, options?: ModalOptions<C>): Promise<ModalHandle<C, R>>
   push<R = unknown>(target: ModalTarget<C>, props?: unknown, options?: ModalOptions<C>): Promise<ModalHandle<C, R>>
   prompt<R = unknown>(target: ModalTarget<C>, props?: unknown, options?: ModalOptions<C>): Promise<R | null>
-  closeAll(scope?: NamespaceScope): Promise<void>
-  pop(scope?: NamespaceScope): Promise<void>
-  closeById(id: ModalId, event?: Partial<ModalCloseEvent>): Promise<void>
+  closeAll(scope?: NamespaceScope): Promise<boolean>
+  pop(scope?: NamespaceScope): Promise<boolean>
+  closeById(id: ModalId, event?: Partial<ModalCloseEvent>): Promise<boolean>
   get(id: ModalId): ModalHandle<C> | undefined
   current(namespace?: Namespace): ModalHandle<C> | undefined
   topmost(predicate?: (options: Readonly<NamespaceOptions>, namespace: Namespace, top: ModalHandle<C>) => boolean): ModalHandle<C> | undefined

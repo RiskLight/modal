@@ -43,7 +43,7 @@ export function useBeforeModalClose(guard: CloseGuard): void {
   )
 }
 
-export function useModalResolve<R = unknown>(): (value: R) => Promise<void> {
+export function useModalResolve<R = unknown>(): (value: R) => Promise<boolean> {
   const handle = useCurrentModal<R>()
   return useCallback((value: R) => handle.resolve(value), [handle])
 }

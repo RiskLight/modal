@@ -1,4 +1,4 @@
-import { createModal, ModalError } from '../../src'
+import { createModal } from '../../src'
 import { A, B, C, deferred, flush, settle } from '../helpers'
 
 describe('handle.close', () => {

@@ -35,7 +35,7 @@ export function onBeforeModalClose(guard: CloseGuard): void {
   if (getCurrentScope()) onScopeDispose(off)
 }
 
-export function useModalResolve<R = unknown>(): (value: R) => Promise<void> {
+export function useModalResolve<R = unknown>(): (value: R) => Promise<boolean> {
   const handle = useCurrentModal<R>()
   return value => handle.resolve(value)
 }

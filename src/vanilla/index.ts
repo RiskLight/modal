@@ -103,7 +103,7 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
         root.append(output.element)
       } catch (error) {
         report(error)
-        handle.close().catch(noop)
+        handle.close().catch(report)
         return
       }
       if (handle.closed) return

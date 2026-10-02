@@ -1,3 +1,4 @@
+import { report } from '../core/report.js'
 import type { ModalManager } from '../core/types.js'
 import { insideSelector, type SelectorSource } from './selector.js'
 
@@ -29,7 +30,7 @@ export function bindEscape(manager: EscapeSource, options: EscapeOptions = {}): 
     if (outside) return
     const top = manager.topmost((namespaceOptions, _namespace, candidate) => namespaceOptions.escClose || candidate.escClose)
     if (!top || !top.escClose || top.status !== 'open') return
-    manager.closeById(top.id, { esc: true }).catch(() => {})
+    manager.closeById(top.id, { esc: true }).catch(report)
   }
   if (type === 'keyup') target.addEventListener('keydown', onKeydown, true)
   target.addEventListener(type, listener)

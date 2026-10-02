@@ -6,5 +6,6 @@ export function createReactModal(options: ReactModalCreateOptions = {}): ReactMo
     ...options,
     requireHost: options.requireHost ?? (namespace => namespace === DEFAULT_NAMESPACE),
   })
-  return { ...core, core } as ReactModalManager
+  const manager: ReactModalManager = { ...core, core }
+  return manager
 }

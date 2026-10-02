@@ -412,6 +412,15 @@ describe('ModalContainer closing', () => {
     expect(handle.closed).toBe(false)
   })
 
+  it('warns about invalid union prop values', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mountContainer(createVueModal(), { backdropTrigger: 'hover', escapeEvent: 'keypress' })
+    const messages = warn.mock.calls.map(call => String(call[0]))
+    expect(messages.some(message => message.includes('backdropTrigger'))).toBe(true)
+    expect(messages.some(message => message.includes('escapeEvent'))).toBe(true)
+    warn.mockRestore()
+  })
+
   it('listens to keyup when escapeEvent is keyup', async () => {
     const modal = createVueModal()
     mountContainer(modal, { escapeEvent: 'keyup' })

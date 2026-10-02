@@ -14,10 +14,14 @@ export function isValidSelector(selector: string | undefined): selector is strin
   }
 }
 
+function isElement(target: EventTarget): target is Element {
+  return 'nodeType' in target && target.nodeType === 1 && 'closest' in target
+}
+
 export function insideSelector(target: EventTarget | null | undefined, source: SelectorSource): boolean {
   const selector = readSelector(source)
-  if (!target || (target as Node).nodeType !== 1 || !isValidSelector(selector)) return false
-  return (target as Element).closest(selector) !== null
+  if (!target || !isElement(target) || !isValidSelector(selector)) return false
+  return target.closest(selector) !== null
 }
 
 export function joinSelectors(...selectors: Array<string | undefined>): string {

@@ -24,10 +24,10 @@ export function useModal(): VueModalManager {
   return manager
 }
 
-export function useCurrentModal<R = unknown>(): VueModalHandle<R> {
+export function useCurrentModal(): VueModalHandle {
   const handle = hasInjectionContext() ? inject(HANDLE_KEY, null) : null
   if (!handle) throw new ModalError('outside-modal', 'This composable can only be used inside a component rendered as a modal')
-  return handle as VueModalHandle<R>
+  return handle
 }
 
 export function onBeforeModalClose(guard: CloseGuard): void {
@@ -36,7 +36,7 @@ export function onBeforeModalClose(guard: CloseGuard): void {
 }
 
 export function useModalResolve<R = unknown>(): (value: R) => Promise<boolean> {
-  const handle = useCurrentModal<R>()
+  const handle = useCurrentModal()
   return value => handle.resolve(value)
 }
 

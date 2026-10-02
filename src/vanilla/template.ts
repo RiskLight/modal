@@ -1,3 +1,4 @@
+import { isRecord } from '../core/guards.js'
 import { report } from '../core/report.js'
 import type { VanillaComponent, VanillaModalHandle, VanillaRendered } from './types.js'
 
@@ -24,7 +25,7 @@ function parseValue(raw: string): unknown {
 }
 
 function bind(root: Element, props: unknown, handle: VanillaModalHandle): void {
-  const values = props && typeof props === 'object' ? (props as Record<string, unknown>) : {}
+  const values = isRecord(props) ? props : {}
   each(root, '[data-prop]', element => {
     const value = values[element.getAttribute('data-prop') ?? '']
     const text = value === undefined || value === null ? '' : String(value)
@@ -54,10 +55,10 @@ function bind(root: Element, props: unknown, handle: VanillaModalHandle): void {
 }
 
 function materialize(template: HTMLTemplateElement): Element {
-  const content = template.content.cloneNode(true) as DocumentFragment
-  const elements = Array.from(content.children)
+  const content = document.importNode(template.content, true)
+  const [first, ...rest] = Array.from(content.children)
   const text = Array.from(content.childNodes).some(node => node.nodeType === 3 && node.textContent?.trim())
-  if (elements.length === 1 && !text) return elements[0]!
+  if (first && rest.length === 0 && !text) return first
   const surface = document.createElement('div')
   surface.append(content)
   return surface

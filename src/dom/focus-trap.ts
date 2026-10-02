@@ -79,7 +79,7 @@ function watchRemoval(): void {
 function onFocusIn(event: FocusEvent): void {
   const top = traps.at(-1)
   if (!top) return
-  const target = event.target as Node | null
+  const target = event.target instanceof Node ? event.target : null
   if (target && top.root.contains(target)) return
   if (target && top.allows(target)) {
     watchRemoval()

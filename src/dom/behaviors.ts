@@ -17,9 +17,14 @@ interface Acquired {
 
 const acquired = new WeakMap<BehaviorSource, Acquired>()
 
-function pick<T extends object>(value: boolean | T | undefined): T | undefined {
+function pickEscape(value: boolean | EscapeOptions | undefined): EscapeOptions | undefined {
   if (value === false) return undefined
-  return value === true || value === undefined ? ({} as T) : value
+  return value === true || value === undefined ? {} : value
+}
+
+function pickScrollLock(value: boolean | ScrollLockOptions | undefined): ScrollLockOptions | undefined {
+  if (value === false) return undefined
+  return value === true || value === undefined ? {} : value
 }
 
 export function acquireBehaviors(manager: BehaviorSource, options: BehaviorOptions = {}): () => void {
@@ -28,8 +33,8 @@ export function acquireBehaviors(manager: BehaviorSource, options: BehaviorOptio
   if (entry) {
     entry.count++
   } else {
-    const escape = pick(options.escape)
-    const scroll = pick(options.scrollLock)
+    const escape = pickEscape(options.escape)
+    const scroll = pickScrollLock(options.scrollLock)
     const selectors = new Map<string, number>()
     const allowOutside = () => joinSelectors(...selectors.keys()) || undefined
     const disposers = [escape && bindEscape(manager, { ...escape, allowOutside }), scroll && bindScrollLock(manager, scroll)]

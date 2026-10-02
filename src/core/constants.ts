@@ -13,4 +13,3 @@ export const BASE_OPTIONS: Readonly<NamespaceOptions> = Object.freeze({
   timeout: false,
 })
 
-export const OPTION_KEYS = Object.freeze(Object.keys(BASE_OPTIONS)) as readonly (keyof NamespaceOptions)[]

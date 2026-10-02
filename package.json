@@ -56,7 +56,10 @@
       "import": "./dist/vanilla/index.js",
       "default": "./dist/vanilla/index.js"
     },
-    "./style.css": "./dist/style.css",
+    "./style.css": {
+      "types": "./dist/style.css.d.ts",
+      "default": "./dist/style.css"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -71,10 +74,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "vite build && tsc -p tsconfig.build.json && cp src/style.css dist/style.css",
+    "build": "vite build && tsc -p tsconfig.build.json && cp src/style.css dist/style.css && printf 'export {}\\n' > dist/style.css.d.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "type-coverage": "type-coverage --strict --at-least 100 --detail -p tsconfig.json"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
@@ -103,11 +107,17 @@
     "oxlint": "^1.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "typescript": "^5.9.0",
+    "type-coverage": "^2.30.2",
+    "typescript": "^7.0.2",
     "vite": "^8.0.0",
     "vitepress": "^1.6.4",
     "vitest": "^5.0.0",
     "vue": "^3.5.0",
     "vue-router": "^5.0.0"
+  },
+  "overrides": {
+    "type-coverage-core": {
+      "typescript": "npm:@typescript/typescript6@^6"
+    }
   }
 }

@@ -14,7 +14,7 @@ export type CloseGuard = (this: unknown, event: ModalCloseEvent) => void | boole
 
 export type ClosedListener = (event: ModalCloseEvent) => void
 
-export type ModalEventListener = (...args: any[]) => unknown
+export type ModalEventListener = (...args: never[]) => unknown
 
 export interface NamespaceOptions {
   escClose: boolean

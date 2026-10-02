@@ -21,12 +21,17 @@ describe('prompt', () => {
     expect(h.closed).toBe(true)
   })
 
-  it('resolves with the value emitted as PROMPT_EVENT', async () => {
+  it('treats PROMPT_EVENT as a plain event in the core, adapters map it to resolve', async () => {
     const m = createModal()
-    const result = m.prompt<string>(A)
+    const result = settle(m.prompt<string>(A))
     await flush()
-    m.current()!.emit(PROMPT_EVENT, 'yes')
-    expect(await result).toBe('yes')
+    const handle = m.current()!
+    const listener = vi.fn()
+    handle.on(PROMPT_EVENT, listener)
+    handle.emit(PROMPT_EVENT, 'yes')
+    await flush()
+    expect(listener).toHaveBeenCalledWith('yes')
+    expect(result.state).toBe('pending')
   })
 
   it('resolves null when closed without a value', async () => {

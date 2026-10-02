@@ -22,10 +22,10 @@ export function useModalSnapshot(namespace?: string, manager?: ReactModalManager
   return useSyncExternalStore(source.subscribe, read, read)
 }
 
-export function useCurrentModal<R = unknown>(): ReactModalHandle<R> {
+export function useCurrentModal(): ReactModalHandle {
   const handle = useContext(HandleContext)
   if (!handle) throw new ModalError('outside-modal', 'This hook can only be used inside a component rendered as a modal')
-  return handle as ReactModalHandle<R>
+  return handle
 }
 
 export function useBeforeModalClose(guard: CloseGuard): void {
@@ -44,6 +44,6 @@ export function useBeforeModalClose(guard: CloseGuard): void {
 }
 
 export function useModalResolve<R = unknown>(): (value: R) => Promise<boolean> {
-  const handle = useCurrentModal<R>()
+  const handle = useCurrentModal()
   return useCallback((value: R) => handle.resolve(value), [handle])
 }

@@ -1,4 +1,3 @@
-import { PROMPT_EVENT } from './constants.js'
 import { report } from './report.js'
 import type {
   ModalCloseEvent,
@@ -11,9 +10,20 @@ import type {
   Namespace,
 } from './types.js'
 
+export interface ManagedHandle {
+  readonly id: ModalId
+  readonly namespace: Namespace
+  seal(): void
+  complete(event: ModalCloseEvent, notify: boolean): void
+}
+
+export interface InternalHandle<C> extends ModalHandle<C, unknown>, ManagedHandle {
+  startTimer(): void
+}
+
 export interface HandleHost {
-  finalize(handle: Handle<any, any>, event: ModalCloseEvent): void
-  touch(handle: Handle<any, any>): void
+  finalize(handle: ManagedHandle, event: ModalCloseEvent): void
+  touch(handle: ManagedHandle): void
   escClose(namespace: Namespace): boolean
 }
 
@@ -164,7 +174,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
         this.#host.finalize(this, event)
         settle.resolve(true)
       },
-      error => {
+      (error: unknown) => {
         this.#closing = undefined
         if (this.#status === 'closing') {
           this.#status = 'open'
@@ -222,12 +232,11 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     if (this.closed) return
     for (const slot of (this.#events.get(event) ?? []).slice()) {
       try {
-        slot.fn(...args)
+        Reflect.apply(slot.fn, undefined, args)
       } catch (error) {
         report(error)
       }
     }
-    if (event === PROMPT_EVENT) this.resolve(args[0] as R).catch(report)
   }
 
   eventNames(): readonly string[] {

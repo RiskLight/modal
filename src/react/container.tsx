@@ -1,6 +1,7 @@
-import { useContext, useLayoutEffect, useRef, useState, type ComponentType } from 'react'
+import { useContext, useLayoutEffect, useRef, useState } from 'react'
 import { DEFAULT_NAMESPACE } from '../core/constants.js'
 import { ModalError } from '../core/errors.js'
+import { isRecord } from '../core/guards.js'
 import { acquireBehaviors } from '../dom/behaviors.js'
 import { createDialogItem, dialogLabelAttrs, type BackdropTrigger, type DialogItem } from '../dom/dialog.js'
 import { inertOutside } from '../dom/inert.js'
@@ -64,8 +65,8 @@ function ModalItem({ handle, revision, active, trapFocus, backdropTrigger, allow
     dialog.update({ active, trapFocus, backdropTrigger, allowOutside })
   }, [dialog, active, trapFocus, backdropTrigger, allowOutside, revision])
 
-  const Component = handle.component as ComponentType<Record<string, unknown>>
-  const props = handle.props && typeof handle.props === 'object' ? (handle.props as Record<string, unknown>) : {}
+  const Component = handle.component
+  const props = isRecord(handle.props) ? handle.props : {}
   const listeners = useListeners(handle, props)
 
   return (

@@ -1,9 +1,9 @@
 import type { App, Component, FunctionalComponent, MaybeRefOrGetter, Slot } from 'vue'
 import type { CreateModalOptions, ModalHandle, ModalManager, ModalOptions } from '../core/types.js'
 
-export type ComponentProps<T> = T extends new (...args: any) => { $props: infer P }
+export type ComponentProps<T> = T extends new (...args: never) => { $props: infer P }
   ? P
-  : T extends FunctionalComponent<infer P, any>
+  : T extends FunctionalComponent<infer P, infer _Emits>
     ? P
     : Record<string, unknown>
 
@@ -31,7 +31,7 @@ export interface VueModalManager extends Omit<ModalManager<Component>, 'open' | 
   prompt<R = unknown, T extends Component = Component>(component: T, ...args: ModalArgs<T>): Promise<R | null>
   prompt<R = unknown>(name: string, ...args: NamedModalArgs): Promise<R | null>
   readonly core: ModalManager<Component>
-  install(app: App): void
+  install(app: App<Element>): void
 }
 
 export type VueModalCreateOptions = CreateModalOptions<Component>
@@ -52,14 +52,14 @@ export interface ModalRouterLike {
   readonly currentRoute: { readonly value: ModalRouteLocation }
   beforeResolve(guard: (to: ModalRouteLocation, from: ModalRouteLocation) => unknown): () => void
   afterEach(hook: (to: ModalRouteLocation, from: ModalRouteLocation, failure?: unknown) => unknown): () => void
-  push(to: any): Promise<unknown>
+  push(to: string): Promise<unknown>
   back(): void
 }
 
 export interface ModalRouteOptions extends VueModalOptions {
   mode?: 'open' | 'push'
   props?: (route: ModalRouteLocation) => Record<string, unknown>
-  fallback?: string | Readonly<Record<string, unknown>>
+  fallback?: string
 }
 
 declare module 'vue' {

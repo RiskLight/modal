@@ -1,6 +1,6 @@
-import { BASE_OPTIONS, DEFAULT_NAMESPACE, OPTION_KEYS } from './constants.js'
+import { BASE_OPTIONS, DEFAULT_NAMESPACE } from './constants.js'
 import { ModalError } from './errors.js'
-import { closeEvent, Handle, type HandleHost } from './handle.js'
+import { closeEvent, Handle, type HandleHost, type InternalHandle } from './handle.js'
 import { report } from './report.js'
 import type {
   BeforeOpen,
@@ -30,12 +30,15 @@ function normalize(namespace: Namespace | undefined): Namespace {
 }
 
 function pickOptions(config: Partial<NamespaceOptions> | undefined): Partial<NamespaceOptions> {
-  const picked: Partial<Record<keyof NamespaceOptions, unknown>> = {}
-  if (!config) return picked as Partial<NamespaceOptions>
-  for (const key of OPTION_KEYS) {
-    if (config[key] !== undefined) picked[key] = config[key]
-  }
-  return picked as Partial<NamespaceOptions>
+  const picked: Partial<NamespaceOptions> = {}
+  if (!config) return picked
+  if (config.escClose !== undefined) picked.escClose = config.escClose
+  if (config.scrollLock !== undefined) picked.scrollLock = config.scrollLock
+  if (config.singleShow !== undefined) picked.singleShow = config.singleShow
+  if (config.backgroundClose !== undefined) picked.backgroundClose = config.backgroundClose
+  if (config.draggable !== undefined) picked.draggable = config.draggable
+  if (config.timeout !== undefined) picked.timeout = config.timeout
+  return picked
 }
 
 function normalizeTimeout(value: number | false | undefined): number | false {
@@ -54,9 +57,9 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
   const defaults: NamespaceOptions = { ...BASE_OPTIONS, ...pickOptions(options.defaults) }
   let globalBeforeOpen: BeforeOpen<C> | undefined = options.defaults?.beforeOpen
   const overrides = new Map<Namespace, Override<C>>()
-  const stacks = new Map<Namespace, Handle<C, unknown>[]>()
+  const stacks = new Map<Namespace, InternalHandle<C>[]>()
   const snapshots = new Map<Namespace, NamespaceSnapshot<C>>()
-  const handles = new Map<ModalId, Handle<C, unknown>>()
+  const handles = new Map<ModalId, InternalHandle<C>>()
   const registry = new Map<string, RegistryEntry<C>>()
   const hosts = new Map<Namespace, number>()
   const listeners = new Set<() => void>()
@@ -85,7 +88,7 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
     notify()
   }
 
-  function stack(namespace: Namespace): Handle<C, unknown>[] {
+  function stack(namespace: Namespace): InternalHandle<C>[] {
     return stacks.get(namespace) ?? []
   }
 
@@ -179,8 +182,8 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
     })
     const guard = options.guardFrom?.(component)
     if (typeof guard === 'function') handle.onBeforeClose(guard)
-    handles.set(handle.id, handle as Handle<C, unknown>)
-    stacks.set(namespace, [...stack(namespace), handle as Handle<C, unknown>])
+    handles.set(handle.id, handle)
+    stacks.set(namespace, [...stack(namespace), handle])
     invalidate(namespace)
     handle.startTimer()
     return handle
@@ -255,7 +258,7 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
     },
     current,
     topmost(predicate) {
-      let best: Handle<C, unknown> | undefined
+      let best: InternalHandle<C> | undefined
       for (const [namespace, items] of stacks) {
         const top = items.at(-1)
         if (!top || (best && best.id > top.id)) continue

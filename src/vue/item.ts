@@ -13,12 +13,14 @@ import {
   vShow,
   watch,
   withDirectives,
-  type PropType,
   type Slot,
 } from 'vue'
 import { PROMPT_EVENT } from '../core/constants.js'
 import { createDialogItem, dialogLabelAttrs } from '../dom/dialog.js'
+import { isRecord } from '../core/guards.js'
+import { report } from '../core/report.js'
 import { HANDLE_KEY } from './keys.js'
+import { requiredObjectProp, unionProp } from './props.js'
 import type { BackdropTrigger, VueModalHandle } from './types.js'
 
 interface ItemExtra {
@@ -27,7 +29,7 @@ interface ItemExtra {
 
 function readProps(source: unknown): Record<string, unknown> {
   const value = toValue(source)
-  if (!value || typeof value !== 'object') return {}
+  if (!isRecord(value)) return {}
   const props: Record<string, unknown> = {}
   for (const [key, entry] of Object.entries(value)) props[key] = isRef(entry) ? entry.value : entry
   return props
@@ -38,12 +40,22 @@ function listenersOf(handle: VueModalHandle, cache: Map<string, (...args: unknow
   for (const name of new Set([PROMPT_EVENT, ...handle.eventNames()])) {
     let listener = cache.get(name)
     if (!listener) {
-      listener = (...args: unknown[]) => handle.emit(name, ...args)
+      listener =
+        name === PROMPT_EVENT
+          ? (...args: unknown[]) => {
+              handle.emit(name, ...args)
+              handle.resolve(args[0]).catch(report)
+            }
+          : (...args: unknown[]) => handle.emit(name, ...args)
       cache.set(name, listener)
     }
     listeners[toHandlerKey(camelize(name))] = listener
   }
   return listeners
+}
+
+function isModalHandle(value: unknown): value is VueModalHandle {
+  return isRecord(value) && typeof value.close === 'function' && typeof value.id === 'number'
 }
 
 function stableSlots(slots: Record<string, Slot> | undefined) {
@@ -53,11 +65,11 @@ function stableSlots(slots: Record<string, Slot> | undefined) {
 export const ModalItem = defineComponent({
   name: 'ModalItem',
   props: {
-    handle: { type: Object as PropType<VueModalHandle>, required: true },
+    handle: requiredObjectProp(isModalHandle),
     revision: { type: Number, default: 0 },
     active: { type: Boolean, default: true },
     trapFocus: { type: Boolean, default: true },
-    backdropTrigger: { type: String as PropType<BackdropTrigger>, default: 'click' },
+    backdropTrigger: unionProp<BackdropTrigger>(['click', 'pointerdown'], 'click'),
     allowOutside: { type: String, default: undefined },
   },
   setup(props) {

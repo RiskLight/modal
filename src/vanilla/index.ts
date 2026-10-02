@@ -212,23 +212,24 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
     mount(autoMount === true ? undefined : autoMount, { namespace: key })
   }
 
-  return {
+  const manager: VanillaModalManager = {
     ...core,
     core,
     mount,
-    open(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
-      return prepare(target, opts?.namespace).then(() => core.open(target, props, opts))
+    open<R = unknown>(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
+      return prepare(target, opts?.namespace).then(() => core.open<R>(target, props, opts))
     },
-    push(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
-      return prepare(target, opts?.namespace).then(() => core.push(target, props, opts))
+    push<R = unknown>(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
+      return prepare(target, opts?.namespace).then(() => core.push<R>(target, props, opts))
     },
-    prompt(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
-      return prepare(target, opts?.namespace).then(() => core.prompt(target, props, opts))
+    prompt<R = unknown>(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
+      return prepare(target, opts?.namespace).then(() => core.prompt<R>(target, props, opts))
     },
     dispose() {
       core.dispose()
       for (const unmount of Array.from(mounts)) unmount()
     },
-  } as VanillaModalManager
+  }
+  return manager
 }
 

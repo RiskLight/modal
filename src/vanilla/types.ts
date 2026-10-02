@@ -10,7 +10,7 @@ export type VanillaComponent<P = any> = (props: P, handle: VanillaModalHandle) =
 
 export type VanillaModalHandle<R = unknown> = ModalHandle<VanillaComponent, R>
 
-export type VanillaComponentProps<T> = T extends (props: infer P, handle: any) => any ? P : Record<string, unknown>
+export type VanillaComponentProps<T> = T extends (props: infer P, handle: never) => unknown ? P : Record<string, unknown>
 
 export type VanillaModalOptions = ModalOptions<VanillaComponent>
 

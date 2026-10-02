@@ -6,7 +6,6 @@ import {
   onMounted,
   TransitionGroup,
   watch,
-  type PropType,
 } from 'vue'
 import { DEFAULT_NAMESPACE } from '../core/constants.js'
 import { acquireBehaviors } from '../dom/behaviors.js'
@@ -15,23 +14,29 @@ import { joinSelectors } from '../dom/selector.js'
 import { useModal, useModalSnapshot } from './composables.js'
 import { ModalItem } from './item.js'
 import { injectStyles } from './styles.js'
+import { optionalObjectProp, unionProp } from './props.js'
+import { isRecord } from '../core/guards.js'
 import type { BackdropTrigger, VueModalManager } from './types.js'
 
 export const HOST_ATTRIBUTE = 'data-modal-host'
+
+function isVueModalManager(value: unknown): value is VueModalManager {
+  return isRecord(value) && typeof value.attachHost === 'function' && typeof value.getSnapshot === 'function'
+}
 
 export const ModalContainer = defineComponent({
   name: 'ModalContainer',
   props: {
     namespace: { type: String, default: DEFAULT_NAMESPACE },
-    manager: { type: Object as PropType<VueModalManager>, default: undefined },
+    manager: optionalObjectProp(isVueModalManager),
     transition: { type: String, default: 'modal-list' },
     appear: { type: Boolean, default: true },
     trapFocus: { type: Boolean, default: true },
     behaviors: { type: Boolean, default: true },
     unstyled: { type: Boolean, default: false },
     nonce: { type: String, default: undefined },
-    backdropTrigger: { type: String as PropType<BackdropTrigger>, default: 'click' },
-    escapeEvent: { type: String as PropType<'keydown' | 'keyup'>, default: 'keydown' },
+    backdropTrigger: unionProp<BackdropTrigger>(['click', 'pointerdown'], 'click'),
+    escapeEvent: unionProp<'keydown' | 'keyup'>(['keydown', 'keyup'], 'keydown'),
     allowOutside: { type: String, default: undefined },
   },
   setup(props) {
@@ -43,7 +48,7 @@ export const ModalContainer = defineComponent({
     let releaseInert: (() => void) | undefined
 
     const syncInert = () => {
-      const element = instance?.proxy?.$el
+      const element = instance?.vnode.el
       const wanted = props.trapFocus && snapshot.value.items.length > 0 && element instanceof HTMLElement
       if (wanted && !releaseInert) releaseInert = inertOutside(element, { exclude: joinSelectors(`[${HOST_ATTRIBUTE}]`, props.allowOutside) })
       else if (!wanted && releaseInert) {

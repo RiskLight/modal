@@ -20,11 +20,10 @@ export function bindEscape(manager: EscapeSource, options: EscapeOptions = {}): 
   const type = options.event ?? 'keydown'
   let pressedOutside: boolean | undefined
   const onKeydown = (event: Event) => {
-    if (isEscape(event as KeyboardEvent)) pressedOutside = insideSelector(event.target, options.allowOutside)
+    if (event instanceof KeyboardEvent && isEscape(event)) pressedOutside = insideSelector(event.target, options.allowOutside)
   }
-  const listener = (event: Event) => {
-    const keyboard = event as KeyboardEvent
-    if (!isEscape(keyboard) || keyboard.isComposing || keyboard.defaultPrevented || keyboard.repeat) return
+  const listener = (keyboard: Event) => {
+    if (!(keyboard instanceof KeyboardEvent) || !isEscape(keyboard) || keyboard.isComposing || keyboard.defaultPrevented || keyboard.repeat) return
     const outside = type === 'keyup' && pressedOutside !== undefined ? pressedOutside : insideSelector(keyboard.target, options.allowOutside)
     pressedOutside = undefined
     if (outside) return

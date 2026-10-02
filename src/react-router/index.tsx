@@ -2,9 +2,9 @@ import { useContext, useEffect, useRef } from 'react'
 import {
   matchRoutes,
   UNSAFE_DataRouterContext,
+  UNSAFE_RouteContext,
   useBlocker,
   useLocation,
-  useMatches,
   useNavigate,
   useParams,
   type Location,
@@ -178,8 +178,7 @@ function useRouteModal(definition: ModalRouteProps, block: boolean): RouteState 
 function DataModalRoute(definition: ModalRouteProps) {
   const state = useRouteModal(definition, true)
   const context = useContext(UNSAFE_DataRouterContext)
-  const matches = useMatches()
-  const ownId = matches.at(-1)?.id
+  const ownId = useContext(UNSAFE_RouteContext).matches.at(-1)?.route.id
   const blocker = useBlocker(({ nextLocation }: { nextLocation: Location<unknown> }) => {
     const entry = state.entry
     if (!entry || entry.handle.closed || !context) return false
@@ -233,8 +232,8 @@ function componentKey(component: ReactModalComponent | string): string {
 }
 
 function KeyedDataModalRoute(definition: ModalRouteProps) {
-  const matches = useMatches()
-  return <DataModalRoute key={matches.at(-1)?.id ?? componentKey(definition.component)} {...definition} />
+  const ownId = useContext(UNSAFE_RouteContext).matches.at(-1)?.route.id
+  return <DataModalRoute key={ownId ?? componentKey(definition.component)} {...definition} />
 }
 
 export function ModalRoute(definition: ModalRouteProps) {

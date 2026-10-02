@@ -78,18 +78,22 @@ function ModalItem({ handle, revision, active, trapFocus, backdropTrigger, allow
   const [dialog] = useState<DialogItem>(() =>
     createDialogItem(handle, { active, trapFocus, backdropTrigger, allowOutside, labels: dialogLabelAttrs(handle.extra), surfaceClass: SURFACE_CLASS }),
   )
+  const cancelEnter = useRef<(() => void) | undefined>(undefined)
   useLayoutEffect(() => {
     const element = root.current
     if (element) dialog.mount(element)
-    const cancelEnter = element && transition ? enterTransition(element, transition) : undefined
+    cancelEnter.current = element && transition ? enterTransition(element, transition) : undefined
     return () => {
-      cancelEnter?.()
+      cancelEnter.current?.()
+      cancelEnter.current = undefined
       dialog.unmount()
     }
   }, [dialog])
   useLayoutEffect(() => {
     const element = root.current
     if (!leaving) return undefined
+    cancelEnter.current?.()
+    cancelEnter.current = undefined
     dialog.unmount()
     if (!element || !transition) {
       onLeft(handle)

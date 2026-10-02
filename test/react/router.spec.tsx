@@ -161,6 +161,26 @@ describe('react-router data router', () => {
   })
 })
 
+describe('react-router own route detection', () => {
+  it('keeps the modal when moving from a child match to its parent modal route', async () => {
+    const modal = createReactModal()
+    const guard = vi.fn(() => true)
+    const { router } = dataRouter(modal, '/users/1/edit', [
+      {
+        path: 'users/:id',
+        element: <ModalRoute component={GuardedUser} props={({ params }) => ({ id: params.id ?? '', allow: guard })} />,
+        children: [{ path: 'edit', element: <p>edit</p> }],
+      } as never,
+    ])
+    await flushReact()
+    const handle = modal.current()!
+    await act(() => router.navigate('/users/1'))
+    await flushReact()
+    expect(handle.closed).toBe(false)
+    expect(guard).not.toHaveBeenCalled()
+  })
+})
+
 describe('react-router declarative router', () => {
   function App({ modal, initial }: { modal: ReactModalManager; initial: string }) {
     return (

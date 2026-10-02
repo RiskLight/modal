@@ -69,6 +69,12 @@ function matchRoute(route: Route, path: string, query: Record<string, string>): 
   return { path, params, query }
 }
 
+function shallowEqual(previous: unknown, next: Record<string, unknown>): boolean {
+  if (!isRecord(previous)) return false
+  const keys = Object.keys(next)
+  return keys.length === Object.keys(previous).length && keys.every(key => Object.is(previous[key], next[key]))
+}
+
 function historyState(): unknown {
   const state: unknown = Reflect.get(window.history, 'state')
   return state
@@ -95,6 +101,7 @@ export function createVanillaRouter(
   let active: Active | undefined
   let running: (() => void) | undefined
   let restoring = false
+  let handledHref: string | undefined
   let syncing: Promise<void> = Promise.resolve()
 
   const hashMode = () => options.mode === 'hash'
@@ -153,7 +160,8 @@ export function createVanillaRouter(
       const matched = find()
       const current = active && !active.handle.closed ? active : undefined
       if (current && matched && matched.route === current.route) {
-        current.handle.setProps(propsFor(matched))
+        const next = propsFor(matched)
+        if (!shallowEqual(current.handle.props, next)) current.handle.setProps(next)
         current.index = currentIndex()
         current.url = location().url
         return
@@ -175,6 +183,8 @@ export function createVanillaRouter(
   }
 
   const onPop = () => {
+    if (window.location.href === handledHref) return
+    handledHref = window.location.href
     if (restoring) {
       restoring = false
       return
@@ -206,6 +216,7 @@ export function createVanillaRouter(
     const index = currentIndex()
     if (navigateOptions.replace) history.replaceState({ [STATE_KEY]: index }, '', toUrl(to))
     else history.pushState({ [STATE_KEY]: index + 1 }, '', toUrl(to))
+    handledHref = window.location.href
     if (running) await sync()
     return true
   }
@@ -227,6 +238,7 @@ export function createVanillaRouter(
         document.removeEventListener('click', onClick)
       }
       running = stop
+      handledHref = window.location.href
       void sync()
       return stop
     },

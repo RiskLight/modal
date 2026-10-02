@@ -59,3 +59,16 @@ describe('react transitions', () => {
     expect([...view.container.querySelectorAll('.title')].map(el => el.textContent)).toEqual(['a', 'c'])
   })
 })
+
+describe('react transitions review fixes', () => {
+  it('cancels the enter transition when closing starts', async () => {
+    const modal = createReactModal()
+    const view = renderContainer(modal, { transition: 'fade' })
+    const handle = await act(() => modal.push(Title, { title: 'x' }))
+    await act(() => handle.close())
+    const root = view.container.querySelector('.modal-container')!
+    expect(root.classList.contains('fade-enter-active')).toBe(false)
+    expect(root.classList.contains('fade-enter-to')).toBe(false)
+    expect(root.classList.contains('fade-leave-active')).toBe(true)
+  })
+})

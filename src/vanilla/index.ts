@@ -6,7 +6,10 @@ import { acquireBehaviors } from '../dom/behaviors.js'
 import { createDialogItem, dialogLabelAttrs, type DialogItem } from '../dom/dialog.js'
 import { inertOutside } from '../dom/inert.js'
 import { injectStyles } from '../dom/styles.js'
+import { findPageTemplate, fromTemplate } from './template.js'
 import type { MountOptions, VanillaComponent, VanillaModalCreateOptions, VanillaModalManager, VanillaRendered } from './types.js'
+
+export { fromHTML, fromTemplate, type TemplateSetup } from './template.js'
 
 export type * from './types.js'
 
@@ -186,8 +189,15 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
     return unmount
   }
 
-  function prepare(namespace: Namespace | undefined): Promise<void> {
+  function registerPageTemplate(target: ModalTarget<VanillaComponent>): void {
+    if (typeof target !== 'string' || core.lookup(target) || typeof document === 'undefined') return
+    const template = findPageTemplate(target)
+    if (template) core.register(target, fromTemplate(template))
+  }
+
+  function prepare(target: ModalTarget<VanillaComponent>, namespace: Namespace | undefined): Promise<void> {
     try {
+      registerPageTemplate(target)
       ensureHost(namespace)
       return Promise.resolve()
     } catch (error) {
@@ -207,13 +217,13 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
     core,
     mount,
     open(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
-      return prepare(opts?.namespace).then(() => core.open(target, props, opts))
+      return prepare(target, opts?.namespace).then(() => core.open(target, props, opts))
     },
     push(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
-      return prepare(opts?.namespace).then(() => core.push(target, props, opts))
+      return prepare(target, opts?.namespace).then(() => core.push(target, props, opts))
     },
     prompt(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
-      return prepare(opts?.namespace).then(() => core.prompt(target, props, opts))
+      return prepare(target, opts?.namespace).then(() => core.prompt(target, props, opts))
     },
     dispose() {
       core.dispose()
@@ -221,3 +231,4 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
     },
   } as VanillaModalManager
 }
+

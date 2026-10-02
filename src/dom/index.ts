@@ -4,6 +4,7 @@ export { trapFocus, focusableElements, type FocusTrapOptions, type FocusTrapRele
 export { makeDraggable } from './draggable.js'
 export { acquireBehaviors, type BehaviorOptions, type BehaviorSource } from './behaviors.js'
 export { inertOutside, type InertOptions } from './inert.js'
+export { insideSelector, joinSelectors, type SelectorSource } from './selector.js'
 export {
   createDialogItem,
   applyDialogDefaults,

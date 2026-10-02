@@ -1,9 +1,11 @@
+import { insideSelector, type SelectorSource } from './selector.js'
+
 export interface FocusTrapOptions {
   initialFocus?: HTMLElement | string
   fallbackFocus?: HTMLElement
   returnFocus?: boolean
   returnFocusTo?: HTMLElement | null
-  allowOutside?: string | (() => string | undefined)
+  allowOutside?: SelectorSource
 }
 
 export interface FocusTrapRelease {
@@ -49,12 +51,45 @@ function resolveInitial(root: HTMLElement, initial: FocusTrapOptions['initialFoc
   return explicit ?? root.querySelector<HTMLElement>('[autofocus]') ?? focusableElements(root)[0] ?? null
 }
 
+let removalObserver: MutationObserver | undefined
+
+function stopWatchingRemoval(): void {
+  removalObserver?.disconnect()
+  removalObserver = undefined
+}
+
+function recoverLostFocus(): void {
+  const top = traps.at(-1)
+  if (!top) return stopWatchingRemoval()
+  const active = document.activeElement
+  if (active && active !== document.body) {
+    if (top.root.contains(active)) stopWatchingRemoval()
+    return
+  }
+  stopWatchingRemoval()
+  top.focusFirst()
+}
+
+function watchRemoval(): void {
+  if (removalObserver || typeof MutationObserver === 'undefined') return
+  removalObserver = new MutationObserver(recoverLostFocus)
+  removalObserver.observe(document.body, { childList: true, subtree: true })
+}
+
 function onFocusIn(event: FocusEvent): void {
   const top = traps.at(-1)
   if (!top) return
   const target = event.target as Node | null
-  if (target && (top.root.contains(target) || top.allows(target))) return
+  if (target && top.root.contains(target)) return
+  if (target && top.allows(target)) {
+    watchRemoval()
+    return
+  }
   top.focusFirst()
+}
+
+function onFocusOut(event: FocusEvent): void {
+  if (event.relatedTarget === null && traps.length > 0) queueMicrotask(recoverLostFocus)
 }
 
 export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): ReleaseFocusTrap {
@@ -92,13 +127,13 @@ export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): Re
     }
   }
 
-  const allows = (target: Node) => {
-    const selector = typeof options.allowOutside === 'function' ? options.allowOutside() : options.allowOutside
-    return !!selector && target instanceof Element && target.closest(selector) !== null
-  }
+  const allows = (target: Node) => insideSelector(target, options.allowOutside)
 
   const trap: Trap = { root, focusFirst, allows }
-  if (traps.length === 0) document.addEventListener('focusin', onFocusIn)
+  if (traps.length === 0) {
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('focusout', onFocusOut)
+  }
   traps.push(trap)
   root.addEventListener('keydown', onKeyDown)
 
@@ -113,7 +148,11 @@ export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): Re
     root.removeEventListener('keydown', onKeyDown)
     const index = traps.indexOf(trap)
     if (index !== -1) traps.splice(index, 1)
-    if (traps.length === 0) document.removeEventListener('focusin', onFocusIn)
+    if (traps.length === 0) {
+      document.removeEventListener('focusin', onFocusIn)
+      document.removeEventListener('focusout', onFocusOut)
+      stopWatchingRemoval()
+    }
     if (!hadTabindex) surface.removeAttribute('tabindex')
     const wanted = release.returnFocus ?? options.returnFocus ?? true
     if (!wanted || !previous) return

@@ -105,6 +105,12 @@ Props can be a plain object, a `ref`, a `reactive`, a `computed` or a getter, an
 <ModalContainer allow-outside="[data-reka-popper-content-wrapper], [data-reka-toast-viewport]" />
 ```
 
+- The selector is checked with `closest()`, so it can name the wrapper the library renders. An invalid selector is ignored.
+- Escape: when the press starts inside an allowed element, the modal stays open, also with `escapeEvent: 'keyup'`.
+- Focus: if the focused allowed element disappears, focus goes back into the modal. Tab inside a popover is left to the library.
+- `inert` is applied when the first modal opens, to wrappers that exist at that moment, such as a toast viewport. A selector that matches something inside the app root keeps that whole branch interactive.
+- With several containers on one manager, Escape honours the selectors of all of them, and each container's focus trap and `inert` use its own.
+
 ### Namespaces and options
 
 ```ts

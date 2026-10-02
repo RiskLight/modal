@@ -679,6 +679,25 @@ describe('ModalContainer review fixes', () => {
     expect(handle.closed).toBe(true)
   })
 
+  it('follows allowOutside changes after mount for inert and Escape', async () => {
+    const toast = document.createElement('div')
+    toast.setAttribute('data-popover', '')
+    toast.innerHTML = '<button id="toast-button">t</button>'
+    document.body.append(toast)
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal)
+    const handle = await modal.push(Focusable)
+    await nextTick()
+    expect(toast.inert).toBe(true)
+    await wrapper.setProps({ allowOutside: '[data-popover]' })
+    await nextTick()
+    expect(toast.inert).toBe(false)
+    const button = document.getElementById('toast-button') as HTMLElement
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flush()
+    expect(handle.closed).toBe(false)
+  })
+
   it('makes content outside the modal hosts inert while a modal is open', async () => {
     const page = document.createElement('main')
     document.body.append(page)

@@ -11,6 +11,7 @@ import {
 import { DEFAULT_NAMESPACE } from '../core/constants.js'
 import { acquireBehaviors } from '../dom/behaviors.js'
 import { inertOutside } from '../dom/inert.js'
+import { joinSelectors } from '../dom/selector.js'
 import { useModal, useModalSnapshot } from './composables.js'
 import { ModalItem } from './item.js'
 import { injectStyles } from './styles.js'
@@ -44,19 +45,39 @@ export const ModalContainer = defineComponent({
     const syncInert = () => {
       const element = instance?.proxy?.$el
       const wanted = props.trapFocus && snapshot.value.items.length > 0 && element instanceof HTMLElement
-      if (wanted && !releaseInert) releaseInert = inertOutside(element, { exclude: [`[${HOST_ATTRIBUTE}]`, props.allowOutside].filter(Boolean).join(', ') })
+      if (wanted && !releaseInert) releaseInert = inertOutside(element, { exclude: joinSelectors(`[${HOST_ATTRIBUTE}]`, props.allowOutside) })
       else if (!wanted && releaseInert) {
         releaseInert()
         releaseInert = undefined
       }
     }
 
+    const bindBehaviors = () => {
+      release?.()
+      release = props.behaviors ? acquireBehaviors(manager.core, { escape: { event: props.escapeEvent, allowOutside: props.allowOutside } }) : undefined
+    }
+
     onMounted(() => {
       if (!props.unstyled) injectStyles(document, props.nonce)
       detach = manager.attachHost(props.namespace)
-      if (props.behaviors) release = acquireBehaviors(manager.core, { escape: { event: props.escapeEvent, allowOutside: props.allowOutside } })
+      bindBehaviors()
       syncInert()
     })
+    watch(
+      () => [props.escapeEvent, props.allowOutside] as const,
+      () => {
+        if (!detach) return
+        bindBehaviors()
+      },
+    )
+    watch(
+      () => props.allowOutside,
+      () => {
+        releaseInert?.()
+        releaseInert = undefined
+        syncInert()
+      },
+    )
     watch(
       () => props.namespace,
       namespace => {

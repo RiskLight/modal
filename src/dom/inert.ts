@@ -11,13 +11,21 @@ const states = new WeakMap<HTMLElement, InertState>()
 
 const SKIPPED = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'LINK', 'META', 'NOSCRIPT'])
 
+function excluded(element: HTMLElement, selector: string): boolean {
+  try {
+    return element.matches(selector) || element.querySelector(selector) !== null
+  } catch {
+    return false
+  }
+}
+
 function collect(keep: HTMLElement, exclude: string | undefined): HTMLElement[] {
   const targets: HTMLElement[] = []
   let node: HTMLElement | null = keep
   while (node && node !== document.body && node.parentElement) {
     for (const sibling of Array.from(node.parentElement.children)) {
       if (sibling === node || !(sibling instanceof HTMLElement) || SKIPPED.has(sibling.tagName)) continue
-      if (exclude && (sibling.matches(exclude) || sibling.querySelector(exclude))) continue
+      if (exclude && excluded(sibling, exclude)) continue
       targets.push(sibling)
     }
     node = node.parentElement

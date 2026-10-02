@@ -4,6 +4,7 @@ import { ModalError } from '../core/errors.js'
 import { acquireBehaviors } from '../dom/behaviors.js'
 import { createDialogItem, dialogLabelAttrs, type BackdropTrigger, type DialogItem } from '../dom/dialog.js'
 import { inertOutside } from '../dom/inert.js'
+import { joinSelectors } from '../dom/selector.js'
 import { injectStyles } from '../dom/styles.js'
 import { HandleContext, ManagerContext } from './context.js'
 import { useModalSnapshot } from './hooks.js'
@@ -112,7 +113,7 @@ export function ModalContainer({
   useLayoutEffect(
     () =>
       trapFocus && hasItems && host.current
-        ? inertOutside(host.current, { exclude: [`[${HOST_ATTRIBUTE}]`, allowOutside].filter(Boolean).join(', ') })
+        ? inertOutside(host.current, { exclude: joinSelectors(`[${HOST_ATTRIBUTE}]`, allowOutside) })
         : undefined,
     [trapFocus, hasItems, allowOutside],
   )

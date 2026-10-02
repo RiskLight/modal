@@ -36,3 +36,5 @@ First release. It started as a rewrite of jenesius-vue-modal 1.11.9.
   - The `.d.ts` files no longer depend on `vue-router`.
 - **React** (`@risklight/modal/react`): `createReactModal()`, `ModalProvider`, `ModalContainer`, and the hooks `useModal`, `useCurrentModal`, `useBeforeModalClose`, `useModalResolve` and `useModalSnapshot` (on `useSyncExternalStore`). Dialog behaviour is shared with Vue through `createDialogItem` in `@risklight/modal/dom`.
 - **Auto-close:** a `timeout` option on namespaces, registry entries and individual opens, for toasts. The dialog surface gets `tabindex="-1"`, so a click inside keeps focus in the dialog. Checked in a real browser with the React playground.
+- **Plain JS** (`@risklight/modal/vanilla`): `createVanillaModal()` with a host that mounts itself on first open. Also `mount(target, options)`, function components `(props, handle) => Node | string | { element, destroy }`, and a `dispose()` that removes the hosts. The core now marks a handle as closed before it notifies subscribers.
+

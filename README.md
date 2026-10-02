@@ -4,12 +4,13 @@
 [![CI](https://github.com/RiskLight/modal/actions/workflows/ci.yml/badge.svg)](https://github.com/RiskLight/modal/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@risklight/modal.svg)](./LICENSE)
 
-A modal stack with a framework-agnostic core, close guards, typed prompts, and adapters for Vue 3 (including Nuxt) and React. It started as a rewrite of [jenesius-vue-modal](https://github.com/Jenesius/vue-modal).
+A modal stack with a framework-agnostic core, close guards, typed prompts, and adapters for Vue 3 (including Nuxt), React and plain JS. It started as a rewrite of [jenesius-vue-modal](https://github.com/Jenesius/vue-modal).
 
 - **Core** (`@risklight/modal`): namespaces, a stack per namespace, `beforeOpen` hooks, close guards, a registry, prompts and stable snapshots. It does not import Vue or touch the DOM.
 - **DOM** (`@risklight/modal/dom`): Escape handling, scroll lock with scrollbar compensation, a focus trap stack and dragging. Every function returns a disposer.
 - **Vue** (`@risklight/modal/vue`): the `createVueModal()` plugin, `<ModalContainer>`, composables and vue-router integration. It works in Nuxt as is.
 - **React** (`@risklight/modal/react`): `createReactModal()`, `<ModalProvider>`, `<ModalContainer>` and hooks.
+- **Plain JS** (`@risklight/modal/vanilla`): `createVanillaModal()`. A component is a function `(props, handle) => Node`, and the host mounts itself into `body` on first open.
 
 Requirements: Node 22.12+ and ESM only. `vue` (3.3 or later), `vue-router` (4 or 5) and `react` (18 or 19) are optional peer dependencies. Install only the one you use.
 
@@ -197,6 +198,29 @@ function ConfirmDelete({ title }: { title: string }) {
 
 **Hooks.** `useModalSnapshot(namespace?)` re-renders on changes through `useSyncExternalStore`, and it works with SSR.
 
+## Plain JS quick start
+
+```js
+import { createVanillaModal } from '@risklight/modal/vanilla'
+
+const modal = createVanillaModal()
+
+function Confirm({ question }, handle) {
+  const box = document.createElement('div')
+  box.innerHTML = '<h2></h2><button>Yes</button>'
+  box.querySelector('h2').textContent = question
+  box.querySelector('button').onclick = () => handle.resolve(true)
+  return box
+}
+
+const ok = await modal.prompt(Confirm, { question: 'Delete?' })
+```
+
+- **Mounting.** The host mounts into `document.body` on the first open, so nothing else is needed. To mount it yourself, call `modal.mount(target?, options?)`, for example `modal.mount('#toasts', { namespace: 'toast', trapFocus: false })`. `mount` takes the same options as the Vue and React containers, plus `className`, and returns an unmount function. `autoMount` can be `false` or a target element or selector.
+- **Components.** A component receives `props` and the `handle` (`resolve`, `close`, `onBeforeClose`, `on`, `emit`). It returns a `Node`, a string (rendered as text, never as HTML), or `{ element, destroy }` when it needs cleanup on close.
+- **Shared behaviour.** Focus trapping, `inert`, Escape, backdrop closing, dragging, timeouts and styles are the same as in the other adapters.
+- **Cleanup.** `modal.dispose()` removes every host the manager mounted.
+
 ## Core without a framework
 
 ```ts
@@ -219,7 +243,8 @@ modals.subscribe(() => render(modals.getSnapshot()))
 
 ## Development
 
-`playground-react/` is a local React app, ignored by git, that runs against the built package (`file:..`). To use it, run `npm run build` in the repository root, then `npm install` and `npm run dev` inside `playground-react/`.
+- **`playground-react/`** is a local React app, ignored by git, that runs against the built package (`file:..`). To use it, run `npm run build` in the repository root, then `npm install` and `npm run dev` inside `playground-react/`.
+- **`playground-vanilla/`** is also ignored by git and runs against the sources. Start it with `npx vite playground-vanilla --config playground-vanilla/vite.config.js`.
 
 
 ```bash

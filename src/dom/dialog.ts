@@ -17,6 +17,11 @@ export interface DialogState {
   backdropTrigger: BackdropTrigger
 }
 
+export interface DialogOptions extends Partial<DialogState> {
+  labels?: Readonly<Record<string, string>>
+  surfaceClass?: string
+}
+
 export interface DialogEvent {
   readonly target: EventTarget | null
   readonly currentTarget: EventTarget | null
@@ -66,7 +71,8 @@ export function dialogLabelAttrs(extra: Readonly<Record<string, unknown>>): Reco
   return attrs
 }
 
-export function createDialogItem(handle: DialogSource, initial: Partial<DialogState> = {}): DialogItem {
+export function createDialogItem(handle: DialogSource, options: DialogOptions = {}): DialogItem {
+  const { labels, surfaceClass, ...initial } = options
   const state: DialogState = { active: true, trapFocus: true, backdropTrigger: 'click', ...initial }
   let root: HTMLElement | undefined
   let releaseTrap: ReleaseFocusTrap | undefined
@@ -114,7 +120,11 @@ export function createDialogItem(handle: DialogSource, initial: Partial<DialogSt
     mount(element) {
       root = element
       const content = surface()
-      if (content) applyDialogDefaults(content)
+      if (content) {
+        for (const [name, value] of Object.entries(labels ?? {})) content.setAttribute(name, value)
+        if (surfaceClass) content.classList.add(...surfaceClass.split(/\s+/).filter(Boolean))
+        applyDialogDefaults(content)
+      }
       syncTrap()
       syncDrag()
     },

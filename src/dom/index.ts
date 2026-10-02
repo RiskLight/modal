@@ -11,6 +11,7 @@ export {
   type BackdropTrigger,
   type DialogEvent,
   type DialogItem,
+  type DialogOptions,
   type DialogSource,
   type DialogState,
 } from './dialog.js'

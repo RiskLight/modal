@@ -271,3 +271,41 @@ describe('trapFocus review fixes', () => {
     expect(document.activeElement?.id).toBe('other')
   })
 })
+
+describe('trapFocus with inert backgrounds', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('returns focus once the opener stops being inert later in the same task', async () => {
+    const page = document.createElement('main')
+    const opener = document.createElement('button')
+    page.append(opener)
+    document.body.append(page)
+    opener.focus()
+    const root = build('<button id="one">1</button>')
+    const off = trapFocus(root)
+    page.inert = true
+    off()
+    page.inert = false
+    await Promise.resolve()
+    expect(document.activeElement).toBe(opener)
+  })
+
+  it('does not return focus late if focus moved elsewhere meanwhile', async () => {
+    const page = document.createElement('main')
+    const opener = document.createElement('button')
+    const other = document.createElement('input')
+    page.append(opener)
+    document.body.append(page, other)
+    opener.focus()
+    const root = build('<button id="one">1</button>')
+    const off = trapFocus(root)
+    page.inert = true
+    off()
+    page.inert = false
+    other.focus()
+    await Promise.resolve()
+    expect(document.activeElement).toBe(other)
+  })
+})

@@ -108,8 +108,18 @@ export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): Re
     if (traps.length === 0) document.removeEventListener('focusin', onFocusIn)
     if (!hadTabindex) surface.removeAttribute('tabindex')
     const wanted = release.returnFocus ?? options.returnFocus ?? true
-    const current = document.activeElement
-    const focusIsOurs = !current || current === document.body || root.contains(current)
-    if (wanted && focusIsOurs && previous && previous.isConnected) previous.focus()
+    if (!wanted || !previous) return
+    const focusIsOurs = () => {
+      const current = document.activeElement
+      return !current || current === document.body || root.contains(current)
+    }
+    const restore = () => {
+      if (focusIsOurs() && previous.isConnected && !previous.closest('[inert]')) previous.focus()
+    }
+    if (previous.closest('[inert]')) {
+      if (focusIsOurs()) queueMicrotask(restore)
+      return
+    }
+    restore()
   }
 }

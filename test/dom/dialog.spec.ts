@@ -123,6 +123,18 @@ describe('createDialogItem', () => {
     item.unmount()
   })
 
+  it('applies given labels and surface classes on mount', async () => {
+    const m = createModal()
+    const { root, surface } = build('<h2>Heading</h2>')
+    const item = createDialogItem(await m.push(A), { labels: { 'aria-label': 'Named' }, surfaceClass: 'modal-item widget__modal-wrap' })
+    item.mount(root)
+    expect(surface.getAttribute('aria-label')).toBe('Named')
+    expect(surface.getAttribute('aria-labelledby')).toBeNull()
+    expect(surface.classList.contains('modal-item')).toBe(true)
+    expect(surface.classList.contains('widget__modal-wrap')).toBe(true)
+    item.unmount()
+  })
+
   it('is safe to unmount twice and before mount', async () => {
     const m = createModal()
     const item = createDialogItem(await m.push(A))

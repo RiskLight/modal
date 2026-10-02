@@ -302,6 +302,23 @@ describe('router review fixes', () => {
     ctx.dispose()
   })
 
+  it('reopens the modal when a later beforeResolve guard aborts the navigation', async () => {
+    const ctx = setup()
+    await go(ctx.router, '/')
+    await go(ctx.router, '/modal')
+    const remove = ctx.router.beforeResolve(to => (to.path === '/page' ? false : undefined))
+    await go(ctx.router, '/page')
+    await flush()
+    await nextTick()
+    expect(ctx.router.currentRoute.value.path).toBe('/modal')
+    expect(ctx.modal.current()?.closed).toBe(false)
+    expect(ctx.wrapper.find('.route-modal').exists()).toBe(true)
+    remove()
+    await go(ctx.router, '/page')
+    expect(ctx.modal.getSnapshot().items).toHaveLength(0)
+    ctx.dispose()
+  })
+
   it('opens the modal of the initial route when the container mounts after the router is ready', async () => {
     const modal = createVueModal()
     const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: Home }, { path: '/m', component: createModalRoute(RouteModal) }] })

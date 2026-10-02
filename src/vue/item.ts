@@ -67,6 +67,19 @@ function safeQuery(root: HTMLElement | undefined, selector: string): HTMLElement
   }
 }
 
+function labelAttrs(extra: ItemExtra): Record<string, string> {
+  const attrs: Record<string, string> = {}
+  if (extra.ariaLabel !== undefined) attrs['aria-label'] = extra.ariaLabel
+  if (extra.ariaLabelledby !== undefined) attrs['aria-labelledby'] = extra.ariaLabelledby
+  return attrs
+}
+
+function applyDialogDefaults(surface: HTMLElement): void {
+  if (!surface.hasAttribute('role')) surface.setAttribute('role', 'dialog')
+  if (!surface.hasAttribute('aria-modal')) surface.setAttribute('aria-modal', 'true')
+  labelFromHeading(surface)
+}
+
 function labelFromHeading(surface: HTMLElement): void {
   if (surface.hasAttribute('aria-label') || surface.hasAttribute('aria-labelledby')) return
   const heading = surface.querySelector<HTMLElement>(HEADING)
@@ -152,7 +165,7 @@ export const ModalItem = defineComponent({
 
     onMounted(() => {
       const content = surface()
-      if (content) labelFromHeading(content)
+      if (content) applyDialogDefaults(content)
       syncTrap()
       syncDrag()
     })
@@ -170,12 +183,8 @@ export const ModalItem = defineComponent({
       const extra = handle.extra as ItemExtra
       const content = h(
         handle.component,
-        mergeProps(readProps(handle.props), listenersOf(handle, listenerCache), {
+        mergeProps(readProps(handle.props), listenersOf(handle, listenerCache), labelAttrs(extra), {
           class: 'modal-item widget__modal-wrap',
-          role: 'dialog',
-          'aria-modal': 'true',
-          'aria-label': extra.ariaLabel,
-          'aria-labelledby': extra.ariaLabelledby,
           ref: setInstance,
         }),
         stableSlots(extra.slots),

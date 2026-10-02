@@ -93,7 +93,7 @@ Props can be a plain object, a `ref`, a `reactive`, a `computed` or a getter, an
 
 **Rendering:**
 - Attributes fall through to the root element, which carries `data-modal-host`.
-- The modal component must render a single root element. That element receives `role="dialog"`, `aria-modal="true"` and an optional `aria-label` or `aria-labelledby`.
+- The modal component must render a single root element. That element receives `role="dialog"` and `aria-modal="true"` unless it sets its own, for example `role="alertdialog"`. It also receives `aria-label` or `aria-labelledby` when they are passed in `extra`.
 - Without a label, the first heading inside the modal (`h1`–`h6`, `[role=heading]` or `[data-modal-title]`) becomes its `aria-labelledby`.
 - The backdrop wrapper has no role.
 
@@ -132,7 +132,7 @@ installModalRouter(router, modal)
 - **Entering and leaving.** The modal opens when the route is entered. When you navigate away, the modal is closed with `event.route === true`. If a guard vetoes the close, the navigation is blocked.
 - **Closing directly.** Closing the modal with Escape, a background click or `close()` navigates back. If the modal route was the first entry in history, it navigates to `fallback`, which defaults to `/`.
 - **Changing params or query.** On the same route the same modal stays open and its props update.
-- **Guards.** The modal closes in `beforeResolve`, so a guard that aborts the navigation leaves the modal open.
+- **Guards.** The modal closes in `beforeResolve`. If a guard aborts the navigation, the modal stays open, or it is reopened when the guard ran after the close.
 - **Container mounted after the router is ready.** If the initial route is a modal route, the modal opens once the container mounts.
 - **Server.** On the server, route modals are not opened.
 - **No dependency on vue-router.** The integration works with vue-router 4 and 5 through structural types, and `vue-router` is only needed if you use these functions.

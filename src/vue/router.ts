@@ -121,7 +121,13 @@ export function installModalRouter(router: ModalRouterLike, manager: VueModalMan
   }
 
   const removeAfter = router.afterEach((to, from, failure) => {
-    if (failure || typeof window === 'undefined') return
+    if (typeof window === 'undefined') return
+    if (failure) {
+      const current = router.currentRoute.value
+      const definition = findModal(current)
+      if (definition && (!active || active.handle.closed)) opening = open(definition, false, current.fullPath).catch(report)
+      return
+    }
     const definition = findModal(to)
     if (!definition || (active && !active.handle.closed && active.definition === definition)) return
     opening = open(definition, from.matched.length === 0, to.fullPath).catch(report)

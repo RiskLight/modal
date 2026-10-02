@@ -96,6 +96,26 @@ describe('ModalContainer rendering', () => {
     expect(surface.attributes('aria-labelledby')).toBe(heading.attributes('id'))
   })
 
+  it('keeps the role and label the component sets on its own root', async () => {
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal)
+    const Alert = defineComponent({ render: () => h('div', { class: 'alert', role: 'alertdialog', 'aria-label': 'Mine' }, [h('h2', 'Heading')]) })
+    await modal.push(Alert)
+    const surface = wrapper.find('.alert')
+    expect(surface.attributes('role')).toBe('alertdialog')
+    expect(surface.attributes('aria-label')).toBe('Mine')
+    expect(surface.attributes('aria-labelledby')).toBeUndefined()
+    expect(surface.attributes('aria-modal')).toBe('true')
+  })
+
+  it('lets options extra override the component label', async () => {
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal)
+    const Alert = defineComponent({ render: () => h('div', { class: 'alert', 'aria-label': 'Mine' }) })
+    await modal.push(Alert, {}, { extra: { ariaLabel: 'From options' } })
+    expect(wrapper.find('.alert').attributes('aria-label')).toBe('From options')
+  })
+
   it('keeps an existing heading id and an explicit label', async () => {
     const modal = createVueModal()
     const wrapper = mountContainer(modal)

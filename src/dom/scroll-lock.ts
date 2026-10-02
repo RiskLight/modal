@@ -45,7 +45,7 @@ function unlock(target: HTMLElement): void {
   target.style.paddingRight = state.paddingRight
 }
 
-export type ScrollLockSource = Pick<ModalManager<any>, 'namespaces' | 'getSnapshot' | 'subscribe'>
+export type ScrollLockSource = Pick<ModalManager<unknown>, 'namespaces' | 'getSnapshot' | 'subscribe'>
 
 function wantsLock(manager: ScrollLockSource): boolean {
   return manager.namespaces().some(namespace => {

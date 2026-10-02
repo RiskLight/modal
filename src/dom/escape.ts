@@ -12,7 +12,7 @@ function isEscape(event: KeyboardEvent): boolean {
   return event.key === 'Escape' || event.code === 'Escape'
 }
 
-export type EscapeSource = Pick<ModalManager<any>, 'topmost' | 'closeById'>
+export type EscapeSource = Pick<ModalManager<unknown>, 'topmost' | 'closeById'>
 
 export function bindEscape(manager: EscapeSource, options: EscapeOptions = {}): () => void {
   if (typeof document === 'undefined') return () => {}

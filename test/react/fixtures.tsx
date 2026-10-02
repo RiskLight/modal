@@ -67,3 +67,12 @@ export async function flushReact() {
 export function escape(type: 'keydown' | 'keyup' = 'keydown') {
   document.dispatchEvent(new KeyboardEvent(type, { key: 'Escape', bubbles: true, cancelable: true }))
 }
+
+export function Toggling() {
+  const [on, setOn] = useState(false)
+  return (
+    <div className={`toggling ${on ? 'b' : 'a'}`}>
+      <button className="toggle" onClick={() => setOn(true)}>toggle</button>
+    </div>
+  )
+}

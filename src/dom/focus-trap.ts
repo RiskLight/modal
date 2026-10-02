@@ -2,6 +2,7 @@ export interface FocusTrapOptions {
   initialFocus?: HTMLElement | string
   fallbackFocus?: HTMLElement
   returnFocus?: boolean
+  returnFocusTo?: HTMLElement | null
 }
 
 export interface FocusTrapRelease {
@@ -56,7 +57,7 @@ function onFocusIn(event: FocusEvent): void {
 
 export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): ReleaseFocusTrap {
   if (typeof document === 'undefined') return () => {}
-  const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  const previous = options.returnFocusTo !== undefined ? options.returnFocusTo : document.activeElement instanceof HTMLElement ? document.activeElement : null
   const surface = options.fallbackFocus ?? root
   const hadTabindex = surface.hasAttribute('tabindex')
 

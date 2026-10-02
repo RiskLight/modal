@@ -165,3 +165,73 @@ describe('injectStyles from dom', () => {
     expect((styles[0] as HTMLStyleElement).nonce).toBe('n')
   })
 })
+
+describe('createDialogItem keeps the surface in shape', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('labels the dialog when the heading appears after mount', async () => {
+    const m = createModal()
+    const { root, surface } = build('<p>loading</p>')
+    const item = createDialogItem(await m.push(A), { trapFocus: false })
+    item.mount(root)
+    const heading = document.createElement('h2')
+    heading.textContent = 'Loaded'
+    surface.append(heading)
+    await Promise.resolve()
+    expect(surface.getAttribute('aria-labelledby')).toBe(heading.id)
+    item.unmount()
+  })
+
+  it('restores the surface class after the component replaces its class attribute', async () => {
+    const m = createModal()
+    const { root, surface } = build()
+    const item = createDialogItem(await m.push(A), { trapFocus: false, surfaceClass: 'modal-item' })
+    item.mount(root)
+    surface.setAttribute('class', 'b')
+    await Promise.resolve()
+    expect(surface.className).toBe('b modal-item')
+    item.unmount()
+  })
+
+  it('applies defaults to a replaced surface element', async () => {
+    const m = createModal()
+    const { root } = build()
+    const item = createDialogItem(await m.push(A), { trapFocus: false })
+    item.mount(root)
+    const next = document.createElement('article')
+    root.replaceChildren(next)
+    await Promise.resolve()
+    expect(next.getAttribute('role')).toBe('dialog')
+    item.unmount()
+  })
+
+  it('stops observing after unmount', async () => {
+    const m = createModal()
+    const { root, surface } = build()
+    const item = createDialogItem(await m.push(A), { trapFocus: false, surfaceClass: 'modal-item' })
+    item.mount(root)
+    item.unmount()
+    surface.setAttribute('class', 'b')
+    await Promise.resolve()
+    expect(surface.className).toBe('b')
+  })
+
+  it('keeps the original opener across an unmount and remount of an open modal', async () => {
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    opener.focus()
+    const m = createModal()
+    const handle = await m.push(A)
+    const { root } = build()
+    const item = createDialogItem(handle)
+    item.mount(root)
+    item.unmount()
+    expect(document.activeElement).not.toBe(opener)
+    item.mount(root)
+    await handle.close()
+    item.unmount()
+    expect(document.activeElement).toBe(opener)
+  })
+})

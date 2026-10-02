@@ -1,7 +1,7 @@
 import { act, fireEvent, render } from '@testing-library/react'
 import { StrictMode } from 'react'
 import { createReactModal, ModalContainer, ModalProvider } from '../../src/react'
-import { Alert, Counter, Draggable, Emitter, escape, flushReact, Focusable, Headed, renderContainer, Title } from './fixtures'
+import { Alert, Counter, Draggable, Emitter, escape, flushReact, Focusable, Headed, renderContainer, Title, Toggling } from './fixtures'
 
 afterEach(() => {
   document.head.innerHTML = ''
@@ -86,6 +86,37 @@ describe('rendering', () => {
 })
 
 describe('accessibility', () => {
+  it('returns focus to the opener under StrictMode', async () => {
+    const modal = createReactModal()
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    opener.focus()
+    render(
+      <StrictMode>
+        <ModalProvider manager={modal}>
+          <ModalContainer />
+        </ModalProvider>
+      </StrictMode>,
+    )
+    const handle = await act(() => modal.push(Focusable))
+    expect(document.activeElement?.id).toBe('first')
+    await act(() => handle.close())
+    await flushReact()
+    expect(document.activeElement).toBe(opener)
+    opener.remove()
+  })
+
+  it('keeps the surface class when the component changes its className', async () => {
+    const modal = createReactModal()
+    const view = renderContainer(modal)
+    await act(() => modal.push(Toggling))
+    fireEvent.click(view.container.querySelector('.toggle')!)
+    await flushReact()
+    const surface = view.container.querySelector('.toggling')!
+    expect(surface.classList.contains('b')).toBe(true)
+    expect(surface.classList.contains('modal-item')).toBe(true)
+  })
+
   it('marks the surface as a modal dialog and leaves the backdrop without a role', async () => {
     const modal = createReactModal()
     const view = renderContainer(modal)

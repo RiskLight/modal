@@ -79,6 +79,8 @@ export function createDialogItem(handle: DialogSource, options: DialogOptions = 
   let releaseDrag: (() => void) | undefined
   let boundDraggable: boolean | string = false
   let savedFocus: HTMLElement | undefined
+  let opener: HTMLElement | null | undefined
+  let observer: MutationObserver | undefined
   let pressedBackdrop = false
 
   const surface = (): HTMLElement | undefined => {
@@ -91,7 +93,11 @@ export function createDialogItem(handle: DialogSource, options: DialogOptions = 
     if (wanted && !releaseTrap && root) {
       const initialFocus = savedFocus?.isConnected ? savedFocus : undefined
       savedFocus = undefined
-      releaseTrap = trapFocus(root, { initialFocus, fallbackFocus: surface() })
+      if (opener === undefined) {
+        const active = document.activeElement
+        opener = active instanceof HTMLElement && !root.contains(active) ? active : null
+      }
+      releaseTrap = trapFocus(root, { initialFocus, fallbackFocus: surface(), returnFocusTo: opener })
     } else if (!wanted && releaseTrap) {
       const focused = document.activeElement
       if (!handle.closed && focused instanceof HTMLElement && root?.contains(focused)) savedFocus = focused
@@ -112,6 +118,18 @@ export function createDialogItem(handle: DialogSource, options: DialogOptions = 
     if (grip) releaseDrag = makeDraggable(content, grip)
   }
 
+  const shapeSurface = () => {
+    const content = surface()
+    if (!content) return
+    for (const [name, value] of Object.entries(labels ?? {})) {
+      if (content.getAttribute(name) !== value) content.setAttribute(name, value)
+    }
+    for (const token of (surfaceClass ?? '').split(/\s+/)) {
+      if (token && !content.classList.contains(token)) content.classList.add(token)
+    }
+    applyDialogDefaults(content)
+  }
+
   const closeFromBackdrop = () => {
     if (handle.backgroundClose) handle.close({ background: true }).catch(noop)
   }
@@ -119,11 +137,10 @@ export function createDialogItem(handle: DialogSource, options: DialogOptions = 
   return {
     mount(element) {
       root = element
-      const content = surface()
-      if (content) {
-        for (const [name, value] of Object.entries(labels ?? {})) content.setAttribute(name, value)
-        if (surfaceClass) content.classList.add(...surfaceClass.split(/\s+/).filter(Boolean))
-        applyDialogDefaults(content)
+      shapeSurface()
+      if (typeof MutationObserver !== 'undefined') {
+        observer = new MutationObserver(shapeSurface)
+        observer.observe(element, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
       }
       syncTrap()
       syncDrag()
@@ -146,7 +163,9 @@ export function createDialogItem(handle: DialogSource, options: DialogOptions = 
       if (fromBackdrop && state.backdropTrigger === 'click') closeFromBackdrop()
     },
     unmount() {
-      releaseTrap?.()
+      observer?.disconnect()
+      observer = undefined
+      releaseTrap?.({ returnFocus: handle.closed })
       releaseDrag?.()
       releaseTrap = undefined
       releaseDrag = undefined

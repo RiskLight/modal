@@ -105,3 +105,42 @@ const unmount = modal.mount('#toasts', { namespace: 'toast', trapFocus: false, c
 - **`autoMount`.** Set it to `false`, or to a target element or selector.
 - **Options.** `mount` takes the same behaviour options as the Vue and React containers.
 - **Cleanup.** `modal.dispose()` closes everything and removes every host the manager created.
+
+## Routing
+
+Bind modals to URLs with the History API. No router library is needed:
+
+```js
+modal.routes({
+  '/users/:id': 'user',
+  '/settings': { modal: Settings, mode: 'push', fallback: '/' },
+  '/files/:name': { modal: FileModal, props: ({ params, query }) => ({ name: params.name, tab: query.tab }) },
+})
+```
+
+```html
+<a href="/users/3" data-modal-link>Open user 3</a>
+```
+
+- **Entering a matching URL** opens the modal: on start for deep links, via `modal.navigate(path)`, via `<a data-modal-link>` or via back and forward.
+- **Leaving the URL** closes the modal with `event.route === true`.
+  - With `navigate()`, a guard veto cancels the navigation.
+  - With the browser back button, a veto returns the URL to the modal.
+- **Closing the modal** (Escape, backdrop, `data-close`) goes back. If the modal URL was the first entry, it goes to `fallback` (default `/`).
+- **Same pattern, new params.** The same modal stays open and gets new props.
+- **Targets.** A target is a component, a registered or template name, or a definition with `modal`, `props`, `mode`, `fallback` and any modal options.
+- **Router options.** `modal.routes(definitions, { mode: 'hash' })` matches `#/path` instead. `links: false` turns off link interception. `modal.routes()` returns a stop function, and calling it again replaces the previous routes.
+
+## Updating props
+
+`handle.setProps(next)` updates an open modal:
+- templates re-apply `data-prop`;
+- function components receive the new props through an `update(props)` returned next to `element`;
+- `fromTemplate` and `fromHTML` setup functions can return `{ update, destroy }`.
+
+## Animations
+
+The host uses the same classes as Vue's `TransitionGroup` (`modal-list-enter-from`, `-enter-active`, `-leave-to` and the rest), so the default styles animate modals in and out. A closing modal stays in the DOM until its transition ends. Focus and `inert` are released immediately.
+
+- **Custom name.** `modal.mount(target, { transition: 'fade' })` uses your own class names.
+- **Off.** `transition: false` disables animations.

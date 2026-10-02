@@ -43,4 +43,9 @@ First release. It started as a rewrite of jenesius-vue-modal 1.11.9.
   - A fire-and-forget `close()` never leaves an unhandled rejection.
 - **Plain JS templates:** `<template data-modal="name">` modals can be opened by name without registration. `fromTemplate()` and `fromHTML()` turn a template or a separate HTML file into a modal. The `data-prop`, `data-resolve`, `data-close` and `data-emit` attributes and `<form data-resolve>` bind props and actions without JavaScript.
 - **Docs:** the VitePress site with a live demo is published to GitHub Pages.
+- **Routing for every adapter:**
+  - `ModalRoute` for react-router 7 and 8 (`@risklight/modal/react-router`) blocks navigation through `useBlocker` with data routers and returns to the modal URL with declarative routers.
+  - A built-in History router for plain JS: `modal.routes()`, `modal.navigate()`, `<a data-modal-link>` and hash mode.
+- **Animations:** enter and leave transitions for React and plain JS, using the same classes as Vue.
+- **`handle.setProps()`:** updates an open modal in every adapter.
 

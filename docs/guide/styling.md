@@ -26,5 +26,16 @@ import '@risklight/modal/style.css'
 
 ## Animations
 
-- **Vue.** Uses `TransitionGroup`. Pass `transition="fade"` and write `.fade-enter-from`, `.fade-leave-to` and the other transition classes.
-- **React and plain JS.** Modals mount and unmount immediately. Animate with CSS on mount, for example `@keyframes` on `.modal-item`.
+All adapters use the same classes as Vue's `TransitionGroup`:
+- `modal-list-enter-from`, `-enter-active`, `-enter-to`;
+- `modal-list-leave-from`, `-leave-active`, `-leave-to`.
+
+The default stylesheet fades the backdrop and slides the dialog. A closing modal stays in the DOM until its CSS transition or animation ends. Focus and `inert` are released as soon as closing starts.
+
+```css
+.fade-enter-active, .fade-leave-active { transition: opacity 150ms; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+```
+
+- **Custom name.** Pass `transition="fade"` to `<ModalContainer>` in Vue and React, or `{ transition: 'fade' }` to `mount()` in plain JS.
+- **Off.** `transition={false}` (React) or `transition: false` (plain JS) disables animations.

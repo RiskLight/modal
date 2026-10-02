@@ -21,6 +21,10 @@ Props are inferred from the component, and required props stay required.
 - **Vue.** Props can be a plain object, `ref`, `reactive`, `computed` or a getter, and the modal re-renders when they change.
 - **React and plain JS.** Props are a plain object.
 
+## Updating props
+
+`handle.setProps(next)` replaces the props of an open modal, and every adapter re-renders it. Routers use it when params change.
+
 ## Options
 
 | Option | Default | |

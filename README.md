@@ -74,7 +74,8 @@ const ok = await modal.prompt('confirm', { question: 'Delete?' })
 - **Imperative and typed.** `open`, `push` and `prompt<R>` from anywhere. Props are inferred from the component, and `prompt` resolves with a typed value or `null`.
 - **Async close guards.** They run on Escape, backdrop, `close()`, stack replacement and route changes. `close()` resolves `true` or `false` instead of throwing on a veto.
 - **Stacks and namespaces.** Modals in modals, toasts with auto-close, `singleShow`, a named registry, and `beforeOpen` hooks at four levels.
-- **vue-router integration.** Route-bound modals that close on navigation, go back on close, and fall back to a page for deep links.
+- **Routing everywhere.** vue-router, react-router (`ModalRoute`) and a built-in History router for plain JS. Modals bound to a route close on navigation, go back on close, fall back to a page for deep links, and let a guard block leaving.
+- **Animations everywhere.** The same enter and leave classes in Vue, React and plain JS. A closing modal stays visible until its transition ends.
 - **Accessible by default.**
   - `role="dialog"` on the surface, labelled by its heading.
   - A focus trap that returns focus to the opener.
@@ -91,6 +92,7 @@ Pick one adapter:
 |---|---|
 | `@risklight/modal/vue` | Vue 3 and Nuxt |
 | `@risklight/modal/react` | React 18 and 19 |
+| `@risklight/modal/react-router` | `ModalRoute` for react-router 7 and 8 |
 | `@risklight/modal/vanilla` | Plain JS: no framework, server-rendered templates, Alpine, htmx, jQuery |
 
 Low-level entry points. You only need them to build an integration for another framework ([docs](https://risklight.github.io/modal/advanced/custom-integrations)):
@@ -101,7 +103,7 @@ Low-level entry points. You only need them to build an integration for another f
 | `@risklight/modal/dom` | Browser behaviour: focus trap, inert, Escape, scroll lock, dragging |
 | `@risklight/modal/style.css` | Default styles, if you disable injection |
 
-`vue`, `vue-router` and `react` are optional peer dependencies. It needs Node 22.12+ and is ESM only; `require()` works on Node 22.12+.
+`vue`, `vue-router`, `react` and `react-router` are optional peer dependencies. It needs Node 22.12+ and is ESM only; `require()` works on Node 22.12+.
 
 ## Development
 

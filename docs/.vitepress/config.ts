@@ -38,6 +38,7 @@ export default defineConfig({
           { text: 'Vue 3 and Nuxt', link: '/adapters/vue' },
           { text: 'vue-router', link: '/adapters/vue-router' },
           { text: 'React', link: '/adapters/react' },
+          { text: 'react-router', link: '/adapters/react-router' },
           { text: 'Plain JS', link: '/adapters/vanilla' },
         ],
       },

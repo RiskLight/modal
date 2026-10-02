@@ -30,6 +30,7 @@
 | `instance` | The rendered component instance (Vue). |
 | `close(event?)` | `Promise<boolean>` |
 | `resolve(value)` | `Promise<boolean>` |
+| `setProps(props)` | Replaces the props of the open modal. |
 | `result` | `Promise<R \| null>` |
 | `onBeforeClose(guard)`, `onClosed(listener)`, `on(event, listener)` | Each returns an unsubscribe function. |
 | `emit(event, ...args)`, `eventNames()` | |

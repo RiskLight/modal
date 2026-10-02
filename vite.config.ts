@@ -13,12 +13,13 @@ export default defineConfig({
         'dom/index': 'src/dom/index.ts',
         'vue/index': 'src/vue/index.ts',
         'compat/index': 'src/compat/index.ts',
+        'react/index': 'src/react/index.ts',
       },
       formats: ['es'],
       fileName: (_format, name) => `${name}.js`,
     },
     rolldownOptions: {
-      external: ['vue', 'vue-router'],
+      external: ['vue', 'vue-router', 'react', 'react/jsx-runtime', 'react-dom'],
       output: {
         chunkFileNames: 'chunks/[name]-[hash].js',
       },

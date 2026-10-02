@@ -4,3 +4,14 @@ export { trapFocus, focusableElements, type FocusTrapOptions, type FocusTrapRele
 export { makeDraggable } from './draggable.js'
 export { acquireBehaviors, type BehaviorOptions, type BehaviorSource } from './behaviors.js'
 export { inertOutside, type InertOptions } from './inert.js'
+export {
+  createDialogItem,
+  applyDialogDefaults,
+  dialogLabelAttrs,
+  type BackdropTrigger,
+  type DialogEvent,
+  type DialogItem,
+  type DialogSource,
+  type DialogState,
+} from './dialog.js'
+export { injectStyles, MODAL_CSS, STYLE_ID } from './styles.js'

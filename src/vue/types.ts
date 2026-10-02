@@ -9,7 +9,7 @@ export type ComponentProps<T> = T extends new (...args: any) => { $props: infer 
 
 export type ModalProps<T> = MaybeRefOrGetter<ComponentProps<T>>
 
-export type BackdropTrigger = 'click' | 'pointerdown'
+export type { BackdropTrigger } from '../dom/dialog.js'
 
 export interface VueModalOptions extends ModalOptions<Component> {
   slots?: Record<string, Slot>

@@ -9,7 +9,7 @@ export default defineConfig({
         test: {
           name: 'node',
           environment: 'node',
-          include: ['test/core/**/*.spec.ts', 'test/ssr/**/*.spec.ts'],
+          include: ['test/core/**/*.spec.ts', 'test/ssr/**/*.spec.{ts,tsx}'],
         },
       },
       {
@@ -21,6 +21,14 @@ export default defineConfig({
           alias: { vue: 'vue/dist/vue.esm-bundler.js' },
           css: { include: [/style\.css/] },
           include: ['test/{dom,vue,compat}/**/*.spec.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'react',
+          environment: 'happy-dom',
+          include: ['test/react/**/*.spec.tsx'],
         },
       },
       {

@@ -2,7 +2,7 @@
   "name": "@risklight/modal",
   "version": "0.1.0",
   "type": "module",
-  "description": "Framework-agnostic modal stack with guards, typed prompts and a Vue 3 adapter. Rewrite of jenesius-vue-modal",
+  "description": "Framework-agnostic modal stack with guards, typed prompts and Vue 3 and React adapters. Rewrite of jenesius-vue-modal",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -19,7 +19,8 @@
     "vue3",
     "vue-router",
     "focus-trap",
-    "jenesius-vue-modal"
+    "jenesius-vue-modal",
+    "react"
   ],
   "engines": {
     "node": ">=22.12"
@@ -51,6 +52,11 @@
       "import": "./dist/compat/index.js",
       "default": "./dist/compat/index.js"
     },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "default": "./dist/react/index.js"
+    },
     "./style.css": "./dist/style.css",
     "./package.json": "./package.json"
   },
@@ -70,13 +76,17 @@
   },
   "peerDependencies": {
     "vue": "^3.3.0",
-    "vue-router": "^4.0.0 || ^5.0.0"
+    "vue-router": "^4.0.0 || ^5.0.0",
+    "react": "^18.0.0 || ^19.0.0"
   },
   "peerDependenciesMeta": {
     "vue": {
       "optional": true
     },
     "vue-router": {
+      "optional": true
+    },
+    "react": {
       "optional": true
     }
   },
@@ -90,6 +100,11 @@
     "vite": "^8.0.0",
     "vitest": "^5.0.0",
     "vue": "^3.5.0",
-    "vue-router": "^5.0.0"
+    "vue-router": "^5.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@testing-library/react": "^16.3.0"
   }
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- **Release pipeline:** the first release published from a tag through npm trusted publishing with provenance. The code is the same as 0.1.0.
+
 ## 0.1.0
 
 First release. It started as a rewrite of jenesius-vue-modal 1.11.9.

@@ -12,7 +12,7 @@ As of October 2026. ✓ yes, ~ partly, ✗ no.
 
 | Package | Open from code | Stack | Typed awaited result | Async close guards | Namespaces | Router integration | Frameworks |
 |---|---|---|---|---|---|---|---|
-| **@risklight/modal** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ vue-router | Vue/Nuxt, React, plain JS |
+| **@risklight/modal** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ vue-router, react-router, built-in History | Vue/Nuxt, React, plain JS |
 | jenesius-vue-modal | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Vue, unmaintained since 07.2024 |
 | vue-final-modal | ✓ | ✓ | ✗ | ~ sync only | ✗ | ✗ | Vue/Nuxt, no release since 09.2024 |
 | @kolirt/vue-modal | ✓ | ✓ | ✓ | ✓ | ✓ | ~ recipe | Vue |
@@ -30,7 +30,7 @@ As of October 2026. ✓ yes, ~ partly, ✗ no.
 - **Async close guards.** They run on Escape, backdrop, `close()`, route changes and when `open()` replaces the stack. `close()` returns whether the modal actually closed.
 - **Namespaces** with their own options: modals, toasts with auto-close, one-at-a-time stacks.
 - **A registry of named modals and `beforeOpen` hooks** at the global, namespace, registry and per-open levels.
-- **vue-router integration:** route-bound modals, close on navigation, back on close, a fallback for deep links.
+- **Routing:** vue-router, react-router and a built-in History router for plain JS. Route-bound modals, close on navigation, back on close, a fallback for deep links.
 - **Accessibility:** dialog semantics, labelling from the heading, focus trap with focus return, `inert` background, `allowOutside` for portaled popovers.
 - **Scroll lock** with scrollbar compensation, plus dragging.
 - **SSR** with one manager per request, no global state.

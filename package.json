@@ -1,6 +1,6 @@
 {
   "name": "@risklight/modal",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Framework-agnostic modal stack with guards, typed prompts and Vue 3 and React adapters.",
   "license": "MIT",

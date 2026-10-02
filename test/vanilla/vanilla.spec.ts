@@ -1,7 +1,16 @@
-import { createVanillaModal, type VanillaComponent } from '../../src/vanilla'
+import { createVanillaModal as create, type VanillaComponent, type VanillaModalCreateOptions, type VanillaModalManager } from '../../src/vanilla'
 import { backdropClick, Confirm, escape, flush, Focusable, Title } from './fixtures'
 
+const created: VanillaModalManager[] = []
+
+function createVanillaModal(options?: VanillaModalCreateOptions): VanillaModalManager {
+  const manager = create(options)
+  created.push(manager)
+  return manager
+}
+
 afterEach(() => {
+  for (const manager of created.splice(0)) manager.dispose()
   document.body.innerHTML = ''
   document.head.innerHTML = ''
   document.body.removeAttribute('style')
@@ -92,6 +101,19 @@ describe('mount', () => {
     await modal.push(Title, { title: 'early' })
     modal.mount()
     expect(document.body.querySelector('.title')!.textContent).toBe('early')
+  })
+})
+
+describe('dispose', () => {
+  it('unmounts every host the manager mounted and releases behaviours', async () => {
+    const modal = create()
+    await modal.push(Title)
+    await modal.push(Title, {}, { namespace: 'side' })
+    expect(document.body.style.overflow).toBe('hidden')
+    modal.dispose()
+    expect(document.querySelectorAll('[data-modal-host]')).toHaveLength(0)
+    expect(document.body.style.overflow).toBe('')
+    await expect(modal.push(Title)).rejects.toMatchObject({ code: 'disposed' })
   })
 })
 

@@ -74,6 +74,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
   #settle!: (value: R | null) => void
   #revision = 0
   #timer: ReturnType<typeof setTimeout> | undefined
+  #finished = false
   #guards: Slot<CloseGuard>[] = []
   #closedListeners: Slot<ClosedListener>[] = []
   #events = new Map<string, Slot<ModalEventListener>[]>()
@@ -231,11 +232,16 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     }, this.timeout)
   }
 
-  complete(event: ModalCloseEvent, notify: boolean): void {
-    if (this.#status === 'closed') return
+  seal(): void {
     this.#status = 'closed'
     if (this.#timer !== undefined) clearTimeout(this.#timer)
     this.#timer = undefined
+  }
+
+  complete(event: ModalCloseEvent, notify: boolean): void {
+    if (this.#finished) return
+    this.#finished = true
+    this.seal()
     const listeners = notify ? this.#closedListeners.map(slot => slot.fn) : []
     const pending = this.#pending
     this.#guards = []

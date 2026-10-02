@@ -19,7 +19,8 @@
     "vue3",
     "vue-router",
     "focus-trap",
-    "react"
+    "react",
+    "vanilla"
   ],
   "engines": {
     "node": ">=22.12"
@@ -49,6 +50,11 @@
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.js",
       "default": "./dist/react/index.js"
+    },
+    "./vanilla": {
+      "types": "./dist/vanilla/index.d.ts",
+      "import": "./dist/vanilla/index.js",
+      "default": "./dist/vanilla/index.js"
     },
     "./style.css": "./dist/style.css",
     "./package.json": "./package.json"

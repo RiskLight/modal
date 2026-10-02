@@ -404,3 +404,24 @@ describe('manager close helpers', () => {
     expect(m.getSnapshot().items).toEqual([])
   })
 })
+
+describe('close notification order', () => {
+  it('marks the handle closed before subscribers are notified', async () => {
+    const m = createModal()
+    const h = await m.push(A)
+    const seen: boolean[] = []
+    m.subscribe(() => void seen.push(h.closed))
+    await h.close()
+    expect(seen).toEqual([true])
+  })
+
+  it('still fires onClosed after subscribers saw the new stack', async () => {
+    const m = createModal()
+    const h = await m.push(A)
+    const order: string[] = []
+    m.subscribe(() => void order.push('subscriber'))
+    h.onClosed(() => void order.push('closed'))
+    await h.close()
+    expect(order).toEqual(['subscriber', 'closed'])
+  })
+})

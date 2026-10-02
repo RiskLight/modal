@@ -114,6 +114,7 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
 
   const host: HandleHost = {
     finalize(handle, event) {
+      handle.seal()
       if (handles.get(handle.id) === handle) {
         handles.delete(handle.id)
         const rest = stack(handle.namespace).filter(item => item !== handle)
@@ -221,6 +222,7 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
 
   function reset(): void {
     const all = [...handles.values()]
+    for (const handle of all) handle.seal()
     handles.clear()
     stacks.clear()
     snapshots.clear()

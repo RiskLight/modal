@@ -17,6 +17,7 @@ First release. It is a rewrite of jenesius-vue-modal 1.11.9.
   - `<ModalContainer>` with attribute fallthrough, `role="dialog"`, `singleShow` per namespace, slots and an injected or importable stylesheet;
   - composables;
   - vue-router integration without a runtime dependency on `vue-router`.
+- **`allowOutside`** on the Vue and React containers (and on `trapFocus`, `bindEscape` and the dialog item in `./dom`): a selector for popovers, menus and toasts rendered outside the modal. They stay out of `inert`, can receive focus, and handle their own Escape.
 - **Compat** (`@risklight/modal/compat`): the jenesius-vue-modal API, with the upstream test suite ported.
 - **Upstream bugs fixed:**
   - a double close removed the modal underneath;

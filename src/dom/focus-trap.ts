@@ -3,6 +3,7 @@ export interface FocusTrapOptions {
   fallbackFocus?: HTMLElement
   returnFocus?: boolean
   returnFocusTo?: HTMLElement | null
+  allowOutside?: string | (() => string | undefined)
 }
 
 export interface FocusTrapRelease {
@@ -29,6 +30,7 @@ const FOCUSABLE = [
 interface Trap {
   root: HTMLElement
   focusFirst(): void
+  allows(target: Node): boolean
 }
 
 const traps: Trap[] = []
@@ -51,7 +53,7 @@ function onFocusIn(event: FocusEvent): void {
   const top = traps.at(-1)
   if (!top) return
   const target = event.target as Node | null
-  if (target && top.root.contains(target)) return
+  if (target && (top.root.contains(target) || top.allows(target))) return
   top.focusFirst()
 }
 
@@ -90,7 +92,12 @@ export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): Re
     }
   }
 
-  const trap: Trap = { root, focusFirst }
+  const allows = (target: Node) => {
+    const selector = typeof options.allowOutside === 'function' ? options.allowOutside() : options.allowOutside
+    return !!selector && target instanceof Element && target.closest(selector) !== null
+  }
+
+  const trap: Trap = { root, focusFirst, allows }
   if (traps.length === 0) document.addEventListener('focusin', onFocusIn)
   traps.push(trap)
   root.addEventListener('keydown', onKeyDown)

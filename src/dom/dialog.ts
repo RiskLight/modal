@@ -15,6 +15,7 @@ export interface DialogState {
   active: boolean
   trapFocus: boolean
   backdropTrigger: BackdropTrigger
+  allowOutside?: string
 }
 
 export interface DialogOptions extends Partial<DialogState> {
@@ -98,7 +99,7 @@ export function createDialogItem(handle: DialogSource, options: DialogOptions = 
         const active = document.activeElement
         opener = active instanceof HTMLElement && !root.contains(active) ? active : null
       }
-      releaseTrap = trapFocus(root, { initialFocus, fallbackFocus: surface(), returnFocusTo: opener })
+      releaseTrap = trapFocus(root, { initialFocus, fallbackFocus: surface(), returnFocusTo: opener, allowOutside: () => state.allowOutside })
     } else if (!wanted && releaseTrap) {
       const focused = document.activeElement
       if (!handle.closed && focused instanceof HTMLElement && root?.contains(focused)) savedFocus = focused

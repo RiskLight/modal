@@ -87,6 +87,7 @@ Props can be a plain object, a `ref`, a `reactive`, a `computed` or a getter, an
 | `trapFocus` | `true` | Moves focus into the visible modal, keeps it there, makes the rest of the page `inert`, and returns focus on close. Set it to `false` for non-modal stacks such as toasts. |
 | `behaviors` | `true` | Escape and scroll lock, bound once per manager. Read at mount. |
 | `escapeEvent` | `'keydown'` | `'keyup'` restores the jenesius-vue-modal behaviour. |
+| `allowOutside` | none | CSS selector for elements outside the modal that must stay usable while it is open, such as popovers, menus and toasts that a UI library renders into `<body>`. They are left out of `inert`, focus may move into them, and an Escape pressed inside them is left to them. |
 | `backdropTrigger` | `'click'` | Closes when both press and release land on the backdrop. `'pointerdown'` closes on press. |
 | `unstyled` | `false` | Skips injecting the default styles. You can import `@risklight/modal/style.css` instead. |
 | `nonce` | none | CSP nonce for the injected `<style>`. |
@@ -97,6 +98,12 @@ Props can be a plain object, a `ref`, a `reactive`, a `computed` or a getter, an
 - The modal component must render a single root element. That element receives `role="dialog"` and `aria-modal="true"` unless it sets its own, for example `role="alertdialog"`. It also receives `aria-label` or `aria-labelledby` when they are passed in `extra`.
 - Without a label, the first heading inside the modal (`h1`–`h6`, `[role=heading]` or `[data-modal-title]`) becomes its `aria-labelledby`.
 - The backdrop wrapper has no role.
+
+**UI libraries with portals.** Selects, date pickers, menus and toasts from Reka UI, Nuxt UI, Radix, Headless UI and similar libraries render into `<body>`, outside the modal. Without `allowOutside` the focus trap pulls focus back from them and `inert` makes them unclickable. List their containers once on the container:
+
+```vue
+<ModalContainer allow-outside="[data-reka-popper-content-wrapper], [data-reka-toast-viewport]" />
+```
 
 ### Namespaces and options
 
@@ -181,7 +188,7 @@ function ConfirmDelete({ title }: { title: string }) {
 
 **Props and events.** Props are passed as a plain object and are typed from the component, so required props are required. Each listener added with `handle.on('save', fn)` is passed to the component as an `onSave` prop, together with any `onSave` you pass yourself.
 
-**Container behaviour.** `<ModalContainer>` accepts the same behaviour props as the Vue one: `namespace`, `trapFocus`, `behaviors`, `escapeEvent`, `backdropTrigger`, `unstyled`, `nonce` and `manager`. Any other HTML attributes go to the host `<div>`. It renders where you place it and does not use a portal.
+**Container behaviour.** `<ModalContainer>` accepts the same behaviour props as the Vue one: `namespace`, `trapFocus`, `behaviors`, `escapeEvent`, `allowOutside`, `backdropTrigger`, `unstyled`, `nonce` and `manager`. Any other HTML attributes go to the host `<div>`. It renders where you place it and does not use a portal.
 
 **Hooks.** `useModalSnapshot(namespace?)` re-renders on changes through `useSyncExternalStore`, and it works with SSR.
 

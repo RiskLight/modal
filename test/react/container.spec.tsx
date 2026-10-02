@@ -171,6 +171,29 @@ describe('accessibility', () => {
     expect(page.inert).toBe(false)
   })
 
+  it('keeps allowOutside elements interactive: no inert, focus allowed, Escape left to them', async () => {
+    const modal = createReactModal()
+    renderContainer(modal, { allowOutside: '[data-popover]' }, <div data-popover="" id="toast">toast</div>)
+    const handle = await act(() => modal.push(Focusable))
+    expect((document.getElementById('toast') as HTMLElement).inert).toBe(false)
+    const popover = document.createElement('div')
+    popover.setAttribute('data-popover', '')
+    popover.innerHTML = '<button id="option">one</button>'
+    document.body.append(popover)
+    const option = document.getElementById('option') as HTMLElement
+    act(() => option.focus())
+    expect(document.activeElement).toBe(option)
+    await act(async () => {
+      option.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    })
+    await flushReact()
+    expect(handle.closed).toBe(false)
+    await act(async () => escape())
+    await flushReact()
+    expect(handle.closed).toBe(true)
+    popover.remove()
+  })
+
   it('skips focus trapping and inert when trapFocus is false', async () => {
     const modal = createReactModal()
     const view = renderContainer(modal, { trapFocus: false }, <main id="page">page</main>)

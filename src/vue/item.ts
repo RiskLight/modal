@@ -58,12 +58,18 @@ export const ModalItem = defineComponent({
     active: { type: Boolean, default: true },
     trapFocus: { type: Boolean, default: true },
     backdropTrigger: { type: String as PropType<BackdropTrigger>, default: 'click' },
+    allowOutside: { type: String, default: undefined },
   },
   setup(props) {
     const handle = props.handle
     provide(HANDLE_KEY, handle)
     const root = ref<HTMLElement>()
-    const dialog = createDialogItem(handle, { active: props.active, trapFocus: props.trapFocus, backdropTrigger: props.backdropTrigger })
+    const dialog = createDialogItem(handle, {
+      active: props.active,
+      trapFocus: props.trapFocus,
+      backdropTrigger: props.backdropTrigger,
+      allowOutside: props.allowOutside,
+    })
     const listenerCache = new Map<string, (...args: unknown[]) => void>()
 
     const setInstance = (instance: unknown) => {
@@ -78,8 +84,8 @@ export const ModalItem = defineComponent({
       if (root.value) dialog.mount(root.value)
     })
     watch(
-      () => [props.active, props.trapFocus, props.backdropTrigger, props.revision] as const,
-      ([active, trapFocus, backdropTrigger]) => dialog.update({ active, trapFocus, backdropTrigger }),
+      () => [props.active, props.trapFocus, props.backdropTrigger, props.allowOutside, props.revision] as const,
+      ([active, trapFocus, backdropTrigger, allowOutside]) => dialog.update({ active, trapFocus, backdropTrigger, allowOutside }),
       { flush: 'post' },
     )
     onBeforeUnmount(() => dialog.unmount())

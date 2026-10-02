@@ -19,6 +19,7 @@ interface ItemProps {
   active: boolean
   trapFocus: boolean
   backdropTrigger: BackdropTrigger
+  allowOutside: string | undefined
 }
 
 function handlerName(event: string): string {
@@ -49,18 +50,18 @@ function useListeners(handle: ReactModalHandle, props: Record<string, unknown>):
   return listeners
 }
 
-function ModalItem({ handle, revision, active, trapFocus, backdropTrigger }: ItemProps) {
+function ModalItem({ handle, revision, active, trapFocus, backdropTrigger, allowOutside }: ItemProps) {
   const root = useRef<HTMLDivElement>(null)
   const [dialog] = useState<DialogItem>(() =>
-    createDialogItem(handle, { active, trapFocus, backdropTrigger, labels: dialogLabelAttrs(handle.extra), surfaceClass: SURFACE_CLASS }),
+    createDialogItem(handle, { active, trapFocus, backdropTrigger, allowOutside, labels: dialogLabelAttrs(handle.extra), surfaceClass: SURFACE_CLASS }),
   )
   useLayoutEffect(() => {
     if (root.current) dialog.mount(root.current)
     return () => dialog.unmount()
   }, [dialog])
   useLayoutEffect(() => {
-    dialog.update({ active, trapFocus, backdropTrigger })
-  }, [dialog, active, trapFocus, backdropTrigger, revision])
+    dialog.update({ active, trapFocus, backdropTrigger, allowOutside })
+  }, [dialog, active, trapFocus, backdropTrigger, allowOutside, revision])
 
   const Component = handle.component as ComponentType<Record<string, unknown>>
   const props = handle.props && typeof handle.props === 'object' ? (handle.props as Record<string, unknown>) : {}
@@ -90,6 +91,7 @@ export function ModalContainer({
   nonce,
   backdropTrigger = 'click',
   escapeEvent = 'keydown',
+  allowOutside,
   ...rest
 }: ModalContainerProps) {
   const provided = useContext(ManagerContext)
@@ -104,12 +106,15 @@ export function ModalContainer({
   }, [unstyled, nonce])
   useLayoutEffect(() => manager.attachHost(namespace), [manager, namespace])
   useLayoutEffect(
-    () => (behaviors ? acquireBehaviors(manager.core, { escape: { event: escapeEvent } }) : undefined),
-    [manager, behaviors, escapeEvent],
+    () => (behaviors ? acquireBehaviors(manager.core, { escape: { event: escapeEvent, allowOutside } }) : undefined),
+    [manager, behaviors, escapeEvent, allowOutside],
   )
   useLayoutEffect(
-    () => (trapFocus && hasItems && host.current ? inertOutside(host.current, { exclude: `[${HOST_ATTRIBUTE}]` }) : undefined),
-    [trapFocus, hasItems],
+    () =>
+      trapFocus && hasItems && host.current
+        ? inertOutside(host.current, { exclude: [`[${HOST_ATTRIBUTE}]`, allowOutside].filter(Boolean).join(', ') })
+        : undefined,
+    [trapFocus, hasItems, allowOutside],
   )
 
   const last = snapshot.items.length - 1
@@ -123,6 +128,7 @@ export function ModalContainer({
           active={!snapshot.options.singleShow || index === last}
           trapFocus={trapFocus}
           backdropTrigger={backdropTrigger}
+          allowOutside={allowOutside}
         />
       ))}
     </div>

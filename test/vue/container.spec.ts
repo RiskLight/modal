@@ -655,6 +655,30 @@ describe('ModalContainer review fixes', () => {
     document.head.innerHTML = ''
   })
 
+  it('keeps allowOutside elements interactive: no inert, focus allowed, Escape left to them', async () => {
+    const toast = document.createElement('div')
+    toast.setAttribute('data-popover', '')
+    document.body.append(toast)
+    const modal = createVueModal()
+    mountContainer(modal, { allowOutside: '[data-popover]' })
+    const handle = await modal.push(Focusable)
+    await nextTick()
+    expect(toast.inert).toBe(false)
+    const popover = document.createElement('div')
+    popover.setAttribute('data-popover', '')
+    popover.innerHTML = '<button id="option">one</button>'
+    document.body.append(popover)
+    const option = document.getElementById('option') as HTMLElement
+    option.focus()
+    expect(document.activeElement).toBe(option)
+    option.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flush()
+    expect(handle.closed).toBe(false)
+    escape()
+    await flush()
+    expect(handle.closed).toBe(true)
+  })
+
   it('makes content outside the modal hosts inert while a modal is open', async () => {
     const page = document.createElement('main')
     document.body.append(page)

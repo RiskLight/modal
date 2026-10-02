@@ -205,9 +205,9 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
 
   async #runGuards(guards: CloseGuard[], event: CloseEvent): Promise<void> {
     for (const guard of guards) {
-      if (this.#status === 'closed') return
+      if (this.closed) return
       const verdict = await guard.call(this.instance, event)
-      if (this.#status === 'closed') return
+      if (this.closed) return
       if (verdict === false) throw new ModalError('guard-rejected', `Closing modal ${this.id} was rejected by a close guard`, { id: this.id })
     }
   }

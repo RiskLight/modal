@@ -1,0 +1,101 @@
+export interface FocusTrapOptions {
+  initialFocus?: HTMLElement | string
+  returnFocus?: boolean
+}
+
+const FOCUSABLE = [
+  'a[href]',
+  'area[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'iframe',
+  'audio[controls]',
+  'video[controls]',
+  'summary',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[tabindex]',
+].join(',')
+
+interface Trap {
+  root: HTMLElement
+  focusFirst(): void
+}
+
+const traps: Trap[] = []
+
+export function focusableElements(root: HTMLElement): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+    element => element.getAttribute('tabindex') !== '-1' && !element.closest('[hidden], [inert]'),
+  )
+}
+
+function resolveInitial(root: HTMLElement, initial: FocusTrapOptions['initialFocus']): HTMLElement | null {
+  const explicit = typeof initial === 'string' ? root.querySelector<HTMLElement>(initial) : initial
+  return explicit ?? root.querySelector<HTMLElement>('[autofocus]') ?? focusableElements(root)[0] ?? null
+}
+
+function onFocusIn(event: FocusEvent): void {
+  const top = traps.at(-1)
+  if (!top) return
+  const target = event.target as Node | null
+  if (target && top.root.contains(target)) return
+  top.focusFirst()
+}
+
+export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): () => void {
+  if (typeof document === 'undefined') return () => {}
+  const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  const hadTabindex = root.hasAttribute('tabindex')
+
+  const focusRoot = () => {
+    if (!root.hasAttribute('tabindex')) root.setAttribute('tabindex', '-1')
+    root.focus()
+  }
+  const focusFirst = () => {
+    const first = focusableElements(root)[0]
+    if (first) first.focus()
+    else focusRoot()
+  }
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== 'Tab') return
+    const list = focusableElements(root)
+    const first = list[0]
+    const last = list.at(-1)
+    if (!first || !last) {
+      event.preventDefault()
+      focusRoot()
+      return
+    }
+    const active = document.activeElement
+    if (event.shiftKey && (active === first || active === root)) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  const trap: Trap = { root, focusFirst }
+  if (traps.length === 0) document.addEventListener('focusin', onFocusIn)
+  traps.push(trap)
+  root.addEventListener('keydown', onKeyDown)
+
+  const initial = resolveInitial(root, options.initialFocus)
+  if (initial) initial.focus()
+  else focusRoot()
+
+  let active = true
+  return () => {
+    if (!active) return
+    active = false
+    root.removeEventListener('keydown', onKeyDown)
+    const index = traps.indexOf(trap)
+    if (index !== -1) traps.splice(index, 1)
+    if (traps.length === 0) document.removeEventListener('focusin', onFocusIn)
+    if (!hadTabindex) root.removeAttribute('tabindex')
+    if (options.returnFocus !== false && previous && previous.isConnected) previous.focus()
+  }
+}

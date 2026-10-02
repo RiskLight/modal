@@ -147,3 +147,22 @@ describe('bindScrollLock', () => {
     el.remove()
   })
 })
+
+describe('scroll lock on a custom scroll container', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('compensates the container scrollbar', async () => {
+    const el = document.createElement('div')
+    document.body.append(el)
+    vi.spyOn(el, 'offsetWidth', 'get').mockReturnValue(300)
+    vi.spyOn(el, 'clientWidth', 'get').mockReturnValue(290)
+    const m = createModal()
+    const off = bindScrollLock(m, { target: el })
+    await m.push(A)
+    expect(el.style.paddingRight).toBe('10px')
+    off()
+    expect(el.style.paddingRight).toBe('')
+  })
+})

@@ -194,3 +194,32 @@ describe('trapFocus', () => {
     expect(document.activeElement).toBe(opener)
   })
 })
+
+describe('trapFocus fallbacks', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('falls back to the first focusable when the initialFocus selector matches nothing', () => {
+    const root = build('<button id="one">1</button>')
+    const off = trapFocus(root, { initialFocus: '#missing' })
+    expect(document.activeElement?.id).toBe('one')
+    off()
+  })
+
+  it('ignores non-Tab keys', () => {
+    const root = build('<button id="one">1</button><button id="two">2</button>')
+    const off = trapFocus(root)
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    document.activeElement!.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    off()
+  })
+
+  it('works when nothing was focused before', () => {
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    const root = build('<button id="one">1</button>')
+    const off = trapFocus(root)
+    expect(() => off()).not.toThrow()
+  })
+})

@@ -96,3 +96,42 @@ describe('makeDraggable', () => {
     off()
   })
 })
+
+describe('makeDraggable with touch and pen', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('drags with any button for touch pointers', () => {
+    const el = document.createElement('div')
+    document.body.append(el)
+    const off = makeDraggable(el, el)
+    pointer('pointerdown', el, 0, 0, { pointerType: 'touch', button: -1 })
+    pointer('pointermove', document, 3, 4)
+    expect(el.style.transform).toBe('translate(3px, 4px)')
+    off()
+  })
+
+  it('restarts cleanly on a second pointerdown without pointerup', () => {
+    const el = document.createElement('div')
+    document.body.append(el)
+    const off = makeDraggable(el, el)
+    pointer('pointerdown', el, 0, 0)
+    pointer('pointermove', document, 10, 0)
+    pointer('pointerdown', el, 10, 0)
+    pointer('pointermove', document, 20, 0)
+    expect(el.style.transform).toBe('translate(20px, 0px)')
+    off()
+  })
+
+  it('reads negative and fractional existing offsets', () => {
+    const el = document.createElement('div')
+    document.body.append(el)
+    el.style.transform = 'translate(-5.5px, 2px)'
+    const off = makeDraggable(el, el)
+    pointer('pointerdown', el, 0, 0)
+    pointer('pointermove', document, 1, 0)
+    expect(el.style.transform).toBe('translate(-4.5px, 2px)')
+    off()
+  })
+})

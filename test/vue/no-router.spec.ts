@@ -9,7 +9,7 @@ function files(dir: string): string[] {
 }
 
 describe('vue-router stays optional', () => {
-  it.each(files('src').filter(path => path.endsWith('.ts')))('%s does not import vue-router', path => {
+  it.each(files('src').filter(path => /\.tsx?$/.test(path)))('%s does not import vue-router', path => {
     expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]vue-router['"]/)
   })
 })
@@ -22,6 +22,14 @@ describe('adapters stay separate', () => {
   it.each(files('src/vanilla'))('%s imports no framework or other adapter', path => {
     expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"](vue|vue-router|react|react-dom)(\/[^'"]*)?['"]/)
     expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]\.\.\/(vue|react)\//)
+  })
+
+  it.each(files('src/react'))('%s does not import react-router', path => {
+    expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]react-router/)
+  })
+
+  it.each(files('src/react-router'))('%s imports no vue', path => {
+    expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"](vue|vue-router)['"]/)
   })
 
   it.each(files('src/react'))('%s does not import vue', path => {

@@ -37,4 +37,10 @@ First release. It started as a rewrite of jenesius-vue-modal 1.11.9.
 - **React** (`@risklight/modal/react`): `createReactModal()`, `ModalProvider`, `ModalContainer`, and the hooks `useModal`, `useCurrentModal`, `useBeforeModalClose`, `useModalResolve` and `useModalSnapshot` (on `useSyncExternalStore`). Dialog behaviour is shared with Vue through `createDialogItem` in `@risklight/modal/dom`.
 - **Auto-close:** a `timeout` option on namespaces, registry entries and individual opens, for toasts. The dialog surface gets `tabindex="-1"`, so a click inside keeps focus in the dialog. Checked in a real browser with the React playground.
 - **Plain JS** (`@risklight/modal/vanilla`): `createVanillaModal()` with a host that mounts itself on first open. Also `mount(target, options)`, function components `(props, handle) => Node | string | { element, destroy }`, and a `dispose()` that removes the hosts. The core now marks a handle as closed before it notifies subscribers.
+- **`close()`:**
+  - `close()`, `resolve()`, `pop()`, `closeById()` and `closeAll()` resolve to a boolean: `true` when the modal closed, `false` when a guard vetoed or there was nothing to close.
+  - They reject only when a guard throws.
+  - A fire-and-forget `close()` never leaves an unhandled rejection.
+- **Plain JS templates:** `<template data-modal="name">` modals can be opened by name without registration. `fromTemplate()` and `fromHTML()` turn a template or a separate HTML file into a modal. The `data-prop`, `data-resolve`, `data-close` and `data-emit` attributes and `<form data-resolve>` bind props and actions without JavaScript.
+- **Docs:** the VitePress site with a live demo is published to GitHub Pages.
 

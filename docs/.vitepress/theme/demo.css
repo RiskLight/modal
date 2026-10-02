@@ -1,0 +1,10 @@
+.demo-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.demo-buttons button, .demo-card button { padding: 6px 12px; border: 1px solid var(--vp-c-divider); border-radius: 6px; background: var(--vp-c-bg-soft); margin-right: 6px; }
+.demo-card { background: var(--vp-c-bg); color: var(--vp-c-text-1); padding: 20px 24px; border-radius: 10px; min-width: 300px; box-shadow: 0 10px 40px rgb(0 0 0 / 0.25); }
+.demo-card h3 { margin-top: 0; }
+.demo-card input[type=text], .demo-card input:not([type]) { border: 1px solid var(--vp-c-divider); border-radius: 6px; padding: 4px 8px; margin-right: 6px; }
+.demo-grip { cursor: move; background: var(--vp-c-bg-soft); padding: 10px 24px; margin: -20px -24px 12px; border-radius: 10px 10px 0 0; font-weight: 600; }
+.demo-toasts { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+.demo-toasts .modal-container { position: static; width: auto; height: auto; background: none; }
+.demo-toast { min-width: 0; display: flex; gap: 12px; align-items: center; }
+.modal-container { z-index: 100; }

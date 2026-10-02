@@ -1,11 +1,15 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 
-describe('vue adapter runtime dependencies', () => {
-  it.each(['src/vue/router.ts', 'src/vue/types.ts', 'src/vue/manager.ts', 'src/vue/container.ts', 'src/vue/item.ts', 'src/vue/composables.ts'])(
-    '%s only imports vue-router types',
-    path => {
-      const text = readFileSync(path, 'utf8')
-      for (const match of text.matchAll(/^import\s+(type\s+)?[^\n]*?from\s+'vue-router'/gm)) expect(match[1]).toBe('type ')
-    },
-  )
+function files(dir: string): string[] {
+  return readdirSync(dir).flatMap(entry => {
+    const path = join(dir, entry)
+    return statSync(path).isDirectory() ? files(path) : [path]
+  })
+}
+
+describe('vue-router stays optional', () => {
+  it.each(files('src').filter(path => path.endsWith('.ts')))('%s does not import vue-router', path => {
+    expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]vue-router['"]/)
+  })
 })

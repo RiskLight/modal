@@ -1,13 +1,12 @@
 import { computed, defineComponent, h, ref, shallowReactive, shallowRef, type Component, type ComputedRef, type Ref } from 'vue'
-import type { Router } from 'vue-router'
 import { DEFAULT_NAMESPACE, PROMPT_EVENT } from '../core/constants.js'
 import { ModalError as CoreModalError } from '../core/errors.js'
-import type { CloseEvent, CloseGuard, EventListener, ModalHandle, ModalId, Namespace, RegistryEntry } from '../core/types.js'
+import type { ModalCloseEvent, CloseGuard, ModalEventListener, ModalHandle, ModalId, Namespace, RegistryEntry } from '../core/types.js'
 import { onBeforeModalClose as vueOnBeforeModalClose } from '../vue/composables.js'
 import { ModalContainer } from '../vue/container.js'
 import { createVueModal } from '../vue/manager.js'
 import { createModalRoute, installModalRouter } from '../vue/router.js'
-import type { VueModalManager } from '../vue/types.js'
+import type { ModalRouterLike, VueModalManager } from '../vue/types.js'
 import { ModalError } from './errors.js'
 
 export { ModalError }
@@ -96,6 +95,9 @@ function wrap(handle: Handle): Modal {
   if (!modal) {
     modal = new Modal(handle)
     wrappers.set(handle, modal)
+    handle.onClosed(() => {
+      version.value++
+    })
   }
   return modal
 }
@@ -202,12 +204,12 @@ export class Modal {
     this.#handle.onBeforeClose(guard)
   }
 
-  set ondestroy(listener: (event: CloseEvent) => void) {
+  set ondestroy(listener: (event: ModalCloseEvent) => void) {
     if (typeof listener !== 'function') throw ModalError.GuardDeclarationType(listener)
     this.#handle.onClosed(listener)
   }
 
-  on(event: string, listener: EventListener): () => void {
+  on(event: string, listener: ModalEventListener): () => void {
     return this.#handle.on(event, listener)
   }
 }
@@ -222,6 +224,8 @@ export const container = defineComponent({
         manager: modalManager,
         transition: settings.animation,
         appear: settings.appear,
+        backdropTrigger: 'pointerdown',
+        escapeEvent: 'keyup',
       })
   },
 })
@@ -264,18 +268,25 @@ function toVueOptions(options: ModalOptions = {}) {
   return { namespace: options.namespace, backgroundClose: options.backgroundClose, draggable: options.draggable, isRoute: options.isRoute }
 }
 
+type Opener = (target: Component | string, props: unknown, options: object) => Promise<Handle>
+
+function openHandle(opener: Opener, component: Component | string, props: unknown, options?: ModalOptions): Promise<Handle> {
+  return translated(opener(component, ref(props), toVueOptions(options)))
+}
+
 export function openModal(component: Component | string, props: unknown = {}, options?: ModalOptions): Promise<Modal> {
-  const open = modalManager.open as (target: Component | string, props: unknown, options: object) => Promise<Handle>
-  return translated(open(component, ref(props), toVueOptions(options))).then(wrap)
+  return openHandle(modalManager.open as Opener, component, props, options).then(wrap)
 }
 
 export function pushModal(component: Component | string, props: unknown = {}, options?: ModalOptions): Promise<Modal> {
-  const push = modalManager.push as (target: Component | string, props: unknown, options: object) => Promise<Handle>
-  return translated(push(component, ref(props), toVueOptions(options))).then(wrap)
+  return openHandle(modalManager.push as Opener, component, props, options).then(wrap)
 }
 
 export function promptModal<R = unknown>(component: Component | string, props: unknown = {}, options?: ModalOptions): Promise<R | null> {
-  return pushModal(component, props, options).then(modal => (modalManager.get(modal.id)?.result ?? null) as Promise<R | null> | null)
+  return openHandle(modalManager.push as Opener, component, props, options).then(handle => {
+    wrap(handle)
+    return handle.result as Promise<R | null>
+  })
 }
 
 export function popModal(options: CloseOptions = {}): Promise<void> {
@@ -286,7 +297,7 @@ export function closeModal(options: CloseOptions = {}): Promise<void> {
   return translated(modalManager.closeAll({ namespace: options.namespace }))
 }
 
-export function closeById(id: ModalId, options: Partial<CloseEvent> = {}): Promise<void> {
+export function closeById(id: ModalId, options: Partial<ModalCloseEvent> = {}): Promise<void> {
   return translated(modalManager.closeById(id, options))
 }
 
@@ -318,11 +329,11 @@ export function onBeforeModalClose(guard: CloseGuard): void {
 
 export interface UseModalRouter {
   (component: Component): Component
-  init(router: Router): void
+  init(router: ModalRouterLike): void
 }
 
 export const useModalRouter: UseModalRouter = Object.assign((component: Component): Component => createModalRoute(component), {
-  init(router: Router): void {
+  init(router: ModalRouterLike): void {
     installModalRouter(router, modalManager)
   },
 })

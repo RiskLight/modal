@@ -24,27 +24,35 @@
   "engines": {
     "node": ">=22.12"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css",
+    "./dist/compat/index.js"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./dom": {
       "types": "./dist/dom/index.d.ts",
-      "import": "./dist/dom/index.js"
+      "import": "./dist/dom/index.js",
+      "default": "./dist/dom/index.js"
     },
     "./vue": {
       "types": "./dist/vue/index.d.ts",
-      "import": "./dist/vue/index.js"
+      "import": "./dist/vue/index.js",
+      "default": "./dist/vue/index.js"
     },
     "./compat": {
       "types": "./dist/compat/index.d.ts",
-      "import": "./dist/compat/index.js"
+      "import": "./dist/compat/index.js",
+      "default": "./dist/compat/index.js"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"

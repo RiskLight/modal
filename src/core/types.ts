@@ -4,17 +4,17 @@ export type ModalId = number
 
 export type ModalStatus = 'open' | 'closing' | 'closed'
 
-export interface CloseEvent {
+export interface ModalCloseEvent {
   background: boolean
   esc: boolean
   route: boolean
 }
 
-export type CloseGuard = (this: unknown, event: CloseEvent) => void | boolean | Promise<void | boolean>
+export type CloseGuard = (this: unknown, event: ModalCloseEvent) => void | boolean | Promise<void | boolean>
 
-export type ClosedListener = (event: CloseEvent) => void
+export type ClosedListener = (event: ModalCloseEvent) => void
 
-export type EventListener = (...args: any[]) => unknown
+export type ModalEventListener = (...args: any[]) => unknown
 
 export interface NamespaceOptions {
   escClose: boolean
@@ -79,11 +79,11 @@ export interface ModalHandle<C = unknown, R = unknown> {
   escClose: boolean
   draggable: boolean | string
   instance: unknown
-  close(event?: Partial<CloseEvent>): Promise<void>
+  close(event?: Partial<ModalCloseEvent>): Promise<void>
   resolve(value: R): Promise<void>
   onBeforeClose(guard: CloseGuard): () => void
   onClosed(listener: ClosedListener): () => void
-  on(event: string, listener: EventListener): () => void
+  on(event: string, listener: ModalEventListener): () => void
   emit(event: string, ...args: unknown[]): void
   eventNames(): readonly string[]
 }
@@ -107,10 +107,10 @@ export interface ModalManager<C = unknown> {
   prompt<R = unknown>(target: ModalTarget<C>, props?: unknown, options?: ModalOptions<C>): Promise<R | null>
   closeAll(scope?: NamespaceScope): Promise<void>
   pop(scope?: NamespaceScope): Promise<void>
-  closeById(id: ModalId, event?: Partial<CloseEvent>): Promise<void>
+  closeById(id: ModalId, event?: Partial<ModalCloseEvent>): Promise<void>
   get(id: ModalId): ModalHandle<C> | undefined
   current(namespace?: Namespace): ModalHandle<C> | undefined
-  topmost(predicate?: (options: Readonly<NamespaceOptions>, namespace: Namespace) => boolean): ModalHandle<C> | undefined
+  topmost(predicate?: (options: Readonly<NamespaceOptions>, namespace: Namespace, top: ModalHandle<C>) => boolean): ModalHandle<C> | undefined
   namespaces(): readonly Namespace[]
   options(namespace?: Namespace): Readonly<NamespaceOptions>
   subscribe(listener: () => void): () => void

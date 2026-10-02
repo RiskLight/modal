@@ -4,7 +4,7 @@ import { closeEvent, Handle, type HandleHost } from './handle.js'
 import { report } from './report.js'
 import type {
   BeforeOpen,
-  CloseEvent,
+  ModalCloseEvent,
   CreateModalOptions,
   ModalHandle,
   ModalId,
@@ -112,13 +112,18 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
     finalize(handle, event) {
       if (handles.get(handle.id) === handle) {
         handles.delete(handle.id)
-        stacks.set(handle.namespace, stack(handle.namespace).filter(item => item !== handle))
+        const rest = stack(handle.namespace).filter(item => item !== handle)
+        if (rest.length > 0) stacks.set(handle.namespace, rest)
+        else stacks.delete(handle.namespace)
         invalidate(handle.namespace)
       }
       handle.complete(event, true)
     },
     touch(handle) {
       if (handles.get(handle.id) === handle) invalidate(handle.namespace)
+    },
+    escClose(namespace) {
+      return resolveOptions(namespace).escClose
     },
   }
 
@@ -163,7 +168,7 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
       isRoute: open.isRoute === true,
       extra: open.extra ?? {},
       backgroundClose: open.backgroundClose ?? entry?.backgroundClose ?? resolved.backgroundClose,
-      escClose: open.escClose ?? entry?.escClose ?? resolved.escClose,
+      escClose: open.escClose ?? entry?.escClose,
       draggable: open.draggable ?? entry?.draggable ?? resolved.draggable,
     })
     const guard = options.guardFrom?.(component)
@@ -181,13 +186,27 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
     }
   }
 
-  async function open<R = unknown>(target: ModalTarget<C>, props?: unknown, opts: ModalOptions<C> = {}): Promise<ModalHandle<C, R>> {
+  const openChains = new Map<Namespace, Promise<unknown>>()
+
+  function open<R = unknown>(target: ModalTarget<C>, props?: unknown, opts: ModalOptions<C> = {}): Promise<ModalHandle<C, R>> {
     const namespace = normalize(opts.namespace)
-    await closeAll({ namespace })
-    if (stack(namespace).length > 0) {
-      throw new ModalError('queue-not-empty', `Namespace "${namespace}" still has open modals`, { namespace })
-    }
-    return push<R>(target, props, opts)
+    const previous = openChains.get(namespace) ?? Promise.resolve()
+    const next = previous.then(async () => {
+      await closeAll({ namespace })
+      if (stack(namespace).length > 0) {
+        throw new ModalError('queue-not-empty', `Namespace "${namespace}" still has open modals`, { namespace })
+      }
+      return push<R>(target, props, opts)
+    })
+    const settled = next.then(
+      () => undefined,
+      () => undefined,
+    )
+    openChains.set(namespace, settled)
+    void settled.then(() => {
+      if (openChains.get(namespace) === settled) openChains.delete(namespace)
+    })
+    return next
   }
 
   function current(namespace?: Namespace): ModalHandle<C> | undefined {
@@ -201,7 +220,7 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
     snapshots.clear()
     version++
     notify()
-    const event: CloseEvent = closeEvent()
+    const event: ModalCloseEvent = closeEvent()
     for (const handle of all) handle.complete(event, false)
   }
 
@@ -230,7 +249,7 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
       for (const [namespace, items] of stacks) {
         const top = items.at(-1)
         if (!top || (best && best.id > top.id)) continue
-        if (predicate && !predicate(resolveOptions(namespace), namespace)) continue
+        if (predicate && !predicate(resolveOptions(namespace), namespace, top)) continue
         best = top
       }
       return best
@@ -272,11 +291,13 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
       registry.delete(name)
     },
     lookup(name) {
-      return registry.get(name)
+      const entry = registry.get(name)
+      return entry ? { ...entry } : undefined
     },
     attachHost(namespace) {
       const key = normalize(namespace)
       hosts.set(key, (hosts.get(key) ?? 0) + 1)
+      invalidate(key)
       let attached = true
       return () => {
         if (!attached) return
@@ -284,13 +305,14 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
         const count = (hosts.get(key) ?? 1) - 1
         if (count > 0) hosts.set(key, count)
         else hosts.delete(key)
+        invalidate(key)
       }
     },
     isHosted,
     reset,
     dispose() {
-      reset()
       disposed = true
+      reset()
       listeners.clear()
     },
   }

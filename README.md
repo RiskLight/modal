@@ -83,12 +83,19 @@ Props can be a plain object, a `ref`, a `reactive`, a `computed` or a getter, an
 | `namespace` | `'default'` | Which stack to render. |
 | `transition` | `'modal-list'` | `TransitionGroup` name. |
 | `appear` | `true` | `TransitionGroup` appear. |
-| `trapFocus` | `true` | Moves focus into the top modal and returns it on close. |
-| `behaviors` | `true` | Escape and scroll lock, bound once per manager. |
+| `trapFocus` | `true` | Moves focus into the visible modal, keeps it there, makes the rest of the page `inert`, and returns focus on close. Set it to `false` for non-modal stacks such as toasts. |
+| `behaviors` | `true` | Escape and scroll lock, bound once per manager. Read at mount. |
+| `escapeEvent` | `'keydown'` | `'keyup'` restores the jenesius-vue-modal behaviour. |
+| `backdropTrigger` | `'click'` | Closes when both press and release land on the backdrop. `'pointerdown'` closes on press. |
 | `unstyled` | `false` | Skips injecting the default styles. You can import `@risklight/modal/style.css` instead. |
+| `nonce` | none | CSP nonce for the injected `<style>`. |
 | `manager` | injected | Use an explicit manager without the plugin. |
 
-Attributes fall through to the root element. Each modal is wrapped in `role="dialog"` and `aria-modal="true"`.
+**Rendering:**
+- Attributes fall through to the root element, which carries `data-modal-host`.
+- The modal component must render a single root element. That element receives `role="dialog"`, `aria-modal="true"` and an optional `aria-label` or `aria-labelledby`.
+- Without a label, the first heading inside the modal (`h1`–`h6`, `[role=heading]` or `[data-modal-title]`) becomes its `aria-labelledby`.
+- The backdrop wrapper has no role.
 
 ### Namespaces and options
 
@@ -104,7 +111,7 @@ await modal.push('confirm', { title: 'By name' })
 ```
 
 - **`beforeOpen` order:** hooks run global, then namespace, then registry entry, then per-open. If any hook returns `false`, the open is cancelled.
-- **Escape:** closes the most recently opened modal whose namespace allows it, across all namespaces.
+- **Escape:** closes the most recently opened modal whose namespace or own `escClose` allows it, across all namespaces. A modal that leaves `escClose` unset follows the namespace setting live. A modal opened with `escClose: false` blocks Escape while it is on top. A namespace with `escClose: false` and no per-modal override is skipped, which suits toasts.
 - **Containers:** the default namespace requires a mounted `<ModalContainer>`. Other namespaces don't.
 
 ### vue-router
@@ -125,7 +132,10 @@ installModalRouter(router, modal)
 - **Entering and leaving.** The modal opens when the route is entered. When you navigate away, the modal is closed with `event.route === true`. If a guard vetoes the close, the navigation is blocked.
 - **Closing directly.** Closing the modal with Escape, a background click or `close()` navigates back. If the modal route was the first entry in history, it navigates to `fallback`, which defaults to `/`.
 - **Changing params or query.** On the same route the same modal stays open and its props update.
-- **No runtime dependency.** `vue-router` is only needed if you use these functions.
+- **Guards.** The modal closes in `beforeResolve`, so a guard that aborts the navigation leaves the modal open.
+- **Container mounted after the router is ready.** If the initial route is a modal route, the modal opens once the container mounts.
+- **Server.** On the server, route modals are not opened.
+- **No dependency on vue-router.** The integration works with vue-router 4 and 5 through structural types, and `vue-router` is only needed if you use these functions.
 
 ## Core without a framework
 
@@ -179,6 +189,14 @@ The upstream test suite is ported in `test/compat` and passes. You don't need `a
 - **Router.** Route records without `components` no longer crash. Calling `useModalRouter.init` twice does nothing instead of throwing.
 - **`closeModal` order.** It closes modals top-down.
 - **Registry options.** Per-open options take precedence over store entry options.
+- **Defaults kept from jenesius-vue-modal.** The compat `container` keeps `keyup` for Escape and `pointerdown` for the backdrop.
+- **SSR.** Compat holds one module-level manager, so use it on the client only. For SSR, create a `createVueModal()` instance per request.
+
+### Notes
+
+- **`reset()` and `dispose()`** drop modals without running guards or `onClosed` listeners. Pending `result` promises resolve with `null`.
+- **Registry entries.** An object with its own `component` key is treated as a registry entry. Any other value is treated as the component itself.
+- **Module resolution.** Subpath imports need `moduleResolution: "bundler"`, `"node16"` or `"nodenext"` in TypeScript. `require()` works on Node 22.12 and later.
 
 ## Development
 

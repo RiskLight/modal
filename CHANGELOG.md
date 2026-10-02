@@ -27,3 +27,19 @@ First release. It is a rewrite of jenesius-vue-modal 1.11.9.
   - the router crashed on records without `components`;
   - `promptModal` was untyped.
 - **Build:** Vite 8 (rolldown) for the library build, vitest 5, oxlint, CI on Node 22 and 24, releases through npm trusted publishing with provenance.
+- **Accessibility:**
+  - `role="dialog"` is on the modal surface.
+  - The dialog is labelled automatically from its heading.
+  - Content outside the modal becomes `inert`.
+  - Escape uses `keydown` and ignores auto-repeat.
+  - The backdrop closes on click.
+  - Focus moves back correctly between stacked and `singleShow` modals.
+- **Robustness:**
+  - A guard can call `close()` or `resolve()` without recursing.
+  - Concurrent `open()` calls are serialized per namespace.
+  - The router closes in `beforeResolve` and waits for a late container.
+  - `promptModal` keeps values resolved during mount.
+  - `exports` has a `default` condition, so `require()` works.
+  - CSS is listed in `sideEffects`.
+  - The `.d.ts` files no longer depend on `vue-router`.
+

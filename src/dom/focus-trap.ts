@@ -1,7 +1,14 @@
 export interface FocusTrapOptions {
   initialFocus?: HTMLElement | string
+  fallbackFocus?: HTMLElement
   returnFocus?: boolean
 }
+
+export interface FocusTrapRelease {
+  returnFocus?: boolean
+}
+
+export type ReleaseFocusTrap = (options?: FocusTrapRelease) => void
 
 const FOCUSABLE = [
   'a[href]',
@@ -27,7 +34,10 @@ const traps: Trap[] = []
 
 export function focusableElements(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-    element => element.getAttribute('tabindex') !== '-1' && !element.closest('[hidden], [inert]'),
+    element =>
+      element.getAttribute('tabindex') !== '-1' &&
+      !element.closest('[hidden], [inert]') &&
+      (typeof element.checkVisibility !== 'function' || element.checkVisibility()),
   )
 }
 
@@ -44,14 +54,15 @@ function onFocusIn(event: FocusEvent): void {
   top.focusFirst()
 }
 
-export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): () => void {
+export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): ReleaseFocusTrap {
   if (typeof document === 'undefined') return () => {}
   const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
-  const hadTabindex = root.hasAttribute('tabindex')
+  const surface = options.fallbackFocus ?? root
+  const hadTabindex = surface.hasAttribute('tabindex')
 
   const focusRoot = () => {
-    if (!root.hasAttribute('tabindex')) root.setAttribute('tabindex', '-1')
-    root.focus()
+    if (!surface.hasAttribute('tabindex')) surface.setAttribute('tabindex', '-1')
+    surface.focus()
   }
   const focusFirst = () => {
     const first = focusableElements(root)[0]
@@ -69,7 +80,7 @@ export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): ()
       return
     }
     const active = document.activeElement
-    if (event.shiftKey && (active === first || active === root)) {
+    if (event.shiftKey && (active === first || active === root || active === surface)) {
       event.preventDefault()
       last.focus()
     } else if (!event.shiftKey && active === last) {
@@ -88,14 +99,17 @@ export function trapFocus(root: HTMLElement, options: FocusTrapOptions = {}): ()
   else focusRoot()
 
   let active = true
-  return () => {
+  return (release: FocusTrapRelease = {}) => {
     if (!active) return
     active = false
     root.removeEventListener('keydown', onKeyDown)
     const index = traps.indexOf(trap)
     if (index !== -1) traps.splice(index, 1)
     if (traps.length === 0) document.removeEventListener('focusin', onFocusIn)
-    if (!hadTabindex) root.removeAttribute('tabindex')
-    if (options.returnFocus !== false && previous && previous.isConnected) previous.focus()
+    if (!hadTabindex) surface.removeAttribute('tabindex')
+    const wanted = release.returnFocus ?? options.returnFocus ?? true
+    const current = document.activeElement
+    const focusIsOurs = !current || current === document.body || root.contains(current)
+    if (wanted && focusIsOurs && previous && previous.isConnected) previous.focus()
   }
 }

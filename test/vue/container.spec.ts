@@ -1,4 +1,4 @@
-import { computed, h, nextTick, reactive, ref, TransitionGroup } from 'vue'
+import { computed, defineComponent, h, nextTick, reactive, ref, TransitionGroup } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createVueModal, ModalContainer } from '../../src/vue'
 import { flush } from '../helpers'
@@ -713,10 +713,10 @@ describe('ModalContainer review fixes', () => {
     const modal = createVueModal()
     mountContainer(modal)
     let renders = 0
-    const Counted = { setup: (_p: unknown, { slots }: { slots: Record<string, () => unknown> }) => () => { renders++; return h('div', slots.default?.() as never) } }
+    const Counted = defineComponent({ setup: (_p, { slots }) => () => { renders++; return h("div", slots.default?.()) } })
     const handle = await modal.push(Counted, {}, { slots: { default: () => [h('i', 'x')] } })
     const before = renders
-    handle.on('noop', () => {})
+    handle.backgroundClose = false
     await nextTick()
     expect(renders).toBe(before)
   })

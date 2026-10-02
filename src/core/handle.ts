@@ -2,10 +2,10 @@ import { PROMPT_EVENT } from './constants.js'
 import { ModalError } from './errors.js'
 import { report } from './report.js'
 import type {
-  CloseEvent,
+  ModalCloseEvent,
   CloseGuard,
   ClosedListener,
-  EventListener,
+  ModalEventListener,
   ModalHandle,
   ModalId,
   ModalStatus,
@@ -13,8 +13,9 @@ import type {
 } from './types.js'
 
 export interface HandleHost {
-  finalize(handle: Handle<any, any>, event: CloseEvent): void
+  finalize(handle: Handle<any, any>, event: ModalCloseEvent): void
   touch(handle: Handle<any, any>): void
+  escClose(namespace: Namespace): boolean
 }
 
 export interface HandleInit<C> {
@@ -25,7 +26,7 @@ export interface HandleInit<C> {
   isRoute: boolean
   extra: Readonly<Record<string, unknown>>
   backgroundClose: boolean
-  escClose: boolean
+  escClose: boolean | undefined
   draggable: boolean | string
 }
 
@@ -35,7 +36,7 @@ interface Slot<T> {
 
 let nextId = 1
 
-export function closeEvent(partial: Partial<CloseEvent> = {}): CloseEvent {
+export function closeEvent(partial: Partial<ModalCloseEvent> = {}): ModalCloseEvent {
   return { background: partial.background === true, esc: partial.esc === true, route: partial.route === true }
 }
 
@@ -59,12 +60,12 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
   readonly isRoute: boolean
   readonly extra: Readonly<Record<string, unknown>>
   readonly result: Promise<R | null>
-  backgroundClose: boolean
-  escClose: boolean
-  draggable: boolean | string
   instance: unknown = undefined
 
   #host: HandleHost
+  #backgroundClose: boolean
+  #escClose: boolean | undefined
+  #draggable: boolean | string
   #status: ModalStatus = 'open'
   #closing: Promise<void> | undefined
   #pending: { value: R } | undefined
@@ -72,7 +73,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
   #revision = 0
   #guards: Slot<CloseGuard>[] = []
   #closedListeners: Slot<ClosedListener>[] = []
-  #events = new Map<string, Slot<EventListener>[]>()
+  #events = new Map<string, Slot<ModalEventListener>[]>()
 
   constructor(host: HandleHost, init: HandleInit<C>) {
     this.#host = host
@@ -82,9 +83,9 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     this.name = init.name
     this.isRoute = init.isRoute
     this.extra = init.extra
-    this.backgroundClose = init.backgroundClose
-    this.escClose = init.escClose
-    this.draggable = init.draggable
+    this.#backgroundClose = init.backgroundClose
+    this.#escClose = init.escClose
+    this.#draggable = init.draggable
     this.result = new Promise<R | null>(resolve => {
       this.#settle = resolve
     })
@@ -102,16 +103,52 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     return this.#revision
   }
 
-  close(partial?: Partial<CloseEvent>): Promise<void> {
+  get backgroundClose(): boolean {
+    return this.#backgroundClose
+  }
+
+  set backgroundClose(value: boolean) {
+    if (value === this.#backgroundClose) return
+    this.#backgroundClose = value
+    this.#changed()
+  }
+
+  get escClose(): boolean {
+    return this.#escClose ?? this.#host.escClose(this.namespace)
+  }
+
+  set escClose(value: boolean) {
+    if (value === this.#escClose) return
+    this.#escClose = value
+    this.#changed()
+  }
+
+  get draggable(): boolean | string {
+    return this.#draggable
+  }
+
+  set draggable(value: boolean | string) {
+    if (value === this.#draggable) return
+    this.#draggable = value
+    this.#changed()
+  }
+
+  close(partial?: Partial<ModalCloseEvent>): Promise<void> {
     if (this.#status === 'closed') return Promise.reject(this.#notFound())
     if (this.#closing) return this.#closing
     const event = closeEvent(partial)
     const guards = this.#guards.map(slot => slot.fn)
+    let settle!: { resolve: () => void; reject: (error: unknown) => void }
+    const closing = new Promise<void>((resolve, reject) => {
+      settle = { resolve, reject }
+    })
     this.#status = 'closing'
-    const closing = this.#runGuards(guards, event).then(
+    this.#closing = closing
+    this.#runGuards(guards, event).then(
       () => {
         this.#closing = undefined
         if (this.#status !== 'closed') this.#host.finalize(this, event)
+        settle.resolve()
       },
       error => {
         this.#closing = undefined
@@ -119,10 +156,9 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
           this.#status = 'open'
           this.#pending = undefined
         }
-        throw error
+        settle.reject(error)
       },
     )
-    this.#closing = closing
     return closing
   }
 
@@ -152,7 +188,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     }
   }
 
-  on(event: string, listener: EventListener): () => void {
+  on(event: string, listener: ModalEventListener): () => void {
     assertFunction(listener, 'Event listener')
     if (this.closed) return () => {}
     const slot = { fn: listener }
@@ -184,7 +220,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     return [...this.#events.keys()]
   }
 
-  complete(event: CloseEvent, notify: boolean): void {
+  complete(event: ModalCloseEvent, notify: boolean): void {
     if (this.#status === 'closed') return
     this.#status = 'closed'
     const listeners = notify ? this.#closedListeners.map(slot => slot.fn) : []
@@ -203,7 +239,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     this.#settle(pending ? pending.value : null)
   }
 
-  async #runGuards(guards: CloseGuard[], event: CloseEvent): Promise<void> {
+  async #runGuards(guards: CloseGuard[], event: ModalCloseEvent): Promise<void> {
     for (const guard of guards) {
       if (this.closed) return
       const verdict = await guard.call(this.instance, event)

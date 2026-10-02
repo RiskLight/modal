@@ -14,11 +14,11 @@ export type EscapeSource = Pick<ModalManager<any>, 'topmost' | 'closeById'>
 export function bindEscape(manager: EscapeSource, options: EscapeOptions = {}): () => void {
   if (typeof document === 'undefined') return () => {}
   const target = options.target ?? document
-  const type = options.event ?? 'keyup'
+  const type = options.event ?? 'keydown'
   const listener = (event: Event) => {
     const keyboard = event as KeyboardEvent
-    if (!isEscape(keyboard) || keyboard.isComposing || keyboard.defaultPrevented) return
-    const top = manager.topmost(namespaceOptions => namespaceOptions.escClose)
+    if (!isEscape(keyboard) || keyboard.isComposing || keyboard.defaultPrevented || keyboard.repeat) return
+    const top = manager.topmost((namespaceOptions, _namespace, candidate) => namespaceOptions.escClose || candidate.escClose)
     if (!top || !top.escClose || top.status !== 'open') return
     manager.closeById(top.id, { esc: true }).catch(() => {})
   }

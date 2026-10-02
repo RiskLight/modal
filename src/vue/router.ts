@@ -1,7 +1,15 @@
 import { computed, markRaw, type Component } from 'vue'
-import type { RouteLocationNormalized, Router } from 'vue-router'
+import { DEFAULT_NAMESPACE } from '../core/constants.js'
+import { isModalError } from '../core/errors.js'
 import { report } from '../core/report.js'
-import type { ModalRouteOptions, VueModalHandle, VueModalManager, VueModalOptions } from './types.js'
+import type {
+  ModalRouteLocation,
+  ModalRouteOptions,
+  ModalRouterLike,
+  VueModalHandle,
+  VueModalManager,
+  VueModalOptions,
+} from './types.js'
 
 const ROUTE_DEFINITION = Symbol('risklight-modal-route')
 
@@ -16,9 +24,14 @@ interface ActiveRoute {
   leaving: boolean
 }
 
+interface Installation {
+  manager: VueModalManager
+  dispose: () => void
+}
+
 type Opener = (component: Component, props: unknown, options: VueModalOptions) => Promise<VueModalHandle>
 
-const installed = new WeakMap<Router, () => void>()
+const installed = new WeakMap<ModalRouterLike, Installation>()
 
 export function createModalRoute(component: Component, options: ModalRouteOptions = {}): Component {
   return markRaw({
@@ -33,7 +46,7 @@ function definitionOf(value: unknown): Definition | undefined {
   return (value as { [ROUTE_DEFINITION]?: Definition })[ROUTE_DEFINITION]
 }
 
-function findModal(location: RouteLocationNormalized): Definition | undefined {
+function findModal(location: ModalRouteLocation): Definition | undefined {
   for (let index = location.matched.length - 1; index >= 0; index--) {
     const components = location.matched[index]?.components ?? {}
     for (const component of Object.values(components)) {
@@ -44,16 +57,22 @@ function findModal(location: RouteLocationNormalized): Definition | undefined {
   return undefined
 }
 
-export function installModalRouter(router: Router, manager: VueModalManager): () => void {
+export function installModalRouter(router: ModalRouterLike, manager: VueModalManager): () => void {
   const existing = installed.get(router)
-  if (existing) return existing
+  if (existing) {
+    if (existing.manager !== manager) throw new Error('This router is already integrated with another modal manager')
+    return existing.dispose
+  }
   let active: ActiveRoute | undefined
   let opening: Promise<void> = Promise.resolve()
 
-  const removeBefore = router.beforeEach(async to => {
+  let cancelWait: (() => void) | undefined
+
+  const removeResolve = router.beforeResolve(async to => {
+    cancelWait?.()
     await opening
     const current = active
-    if (!current || current.handle.closed || findModal(to) === current.definition) return
+    if (!current || current.handle.closed || findModal(to) === current.definition) return undefined
     current.leaving = true
     try {
       await current.handle.close({ route: true })
@@ -64,31 +83,56 @@ export function installModalRouter(router: Router, manager: VueModalManager): ()
     return undefined
   })
 
-  const removeAfter = router.afterEach((to, from, failure) => {
-    if (failure) return
-    const definition = findModal(to)
-    if (!definition || (active && !active.handle.closed && active.definition === definition)) return
+  const register = (definition: Definition, handle: VueModalHandle, firstEntry: boolean, fallback: ModalRouteOptions['fallback']) => {
+    const entry: ActiveRoute = { definition, handle, leaving: false }
+    active = entry
+    handle.onClosed(() => {
+      if (active === entry) active = undefined
+      if (entry.leaving) return
+      if (firstEntry) router.push(fallback ?? '/').catch(report)
+      else router.back()
+    })
+  }
+
+  const open = async (definition: Definition, firstEntry: boolean, target: string): Promise<void> => {
     const { mode, props: mapProps, fallback, ...options } = definition.options
-    const firstEntry = from.matched.length === 0
+    const namespace = options.namespace || DEFAULT_NAMESPACE
     const props = computed(() => (mapProps ? mapProps(router.currentRoute.value) : router.currentRoute.value.params))
     const opener = (mode === 'push' ? manager.push : manager.open) as Opener
-    opening = opener(definition.component, props, { ...options, isRoute: true }).then(handle => {
-      const entry: ActiveRoute = { definition, handle, leaving: false }
-      active = entry
-      handle.onClosed(() => {
-        if (active === entry) active = undefined
-        if (entry.leaving) return
-        if (firstEntry) router.push(fallback ?? '/').catch(report)
-        else router.back()
+    const attempt = () => opener(definition.component, props, { ...options, isRoute: true })
+    try {
+      register(definition, await attempt(), firstEntry, fallback)
+    } catch (error) {
+      if (!isModalError(error, 'not-hosted')) throw error
+      cancelWait?.()
+      const off = manager.subscribe(() => {
+        if (!manager.isHosted(namespace)) return
+        cancelWait?.()
+        if (router.currentRoute.value.fullPath !== target) return
+        opening = attempt()
+          .then(handle => register(definition, handle, firstEntry, fallback))
+          .catch(report)
       })
-    }, report)
+      cancelWait = () => {
+        off()
+        cancelWait = undefined
+      }
+    }
+  }
+
+  const removeAfter = router.afterEach((to, from, failure) => {
+    if (failure || typeof window === 'undefined') return
+    const definition = findModal(to)
+    if (!definition || (active && !active.handle.closed && active.definition === definition)) return
+    opening = open(definition, from.matched.length === 0, to.fullPath).catch(report)
   })
 
   const dispose = () => {
-    removeBefore()
+    cancelWait?.()
+    removeResolve()
     removeAfter()
-    if (installed.get(router) === dispose) installed.delete(router)
+    if (installed.get(router)?.dispose === dispose) installed.delete(router)
   }
-  installed.set(router, dispose)
+  installed.set(router, { manager, dispose })
   return dispose
 }

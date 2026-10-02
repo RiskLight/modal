@@ -1,10 +1,22 @@
-import { defineComponent, h, onBeforeUnmount, onMounted, TransitionGroup, watch, type PropType } from 'vue'
+import {
+  defineComponent,
+  getCurrentInstance,
+  h,
+  onBeforeUnmount,
+  onMounted,
+  TransitionGroup,
+  watch,
+  type PropType,
+} from 'vue'
 import { DEFAULT_NAMESPACE } from '../core/constants.js'
 import { acquireBehaviors } from '../dom/behaviors.js'
+import { inertOutside } from '../dom/inert.js'
 import { useModal, useModalSnapshot } from './composables.js'
 import { ModalItem } from './item.js'
 import { injectStyles } from './styles.js'
-import type { VueModalManager } from './types.js'
+import type { BackdropTrigger, VueModalManager } from './types.js'
+
+export const HOST_ATTRIBUTE = 'data-modal-host'
 
 export const ModalContainer = defineComponent({
   name: 'ModalContainer',
@@ -16,17 +28,33 @@ export const ModalContainer = defineComponent({
     trapFocus: { type: Boolean, default: true },
     behaviors: { type: Boolean, default: true },
     unstyled: { type: Boolean, default: false },
+    nonce: { type: String, default: undefined },
+    backdropTrigger: { type: String as PropType<BackdropTrigger>, default: 'click' },
+    escapeEvent: { type: String as PropType<'keydown' | 'keyup'>, default: 'keydown' },
   },
   setup(props) {
     const manager = props.manager ?? useModal()
     const snapshot = useModalSnapshot(() => props.namespace, manager)
+    const instance = getCurrentInstance()
     let detach: (() => void) | undefined
     let release: (() => void) | undefined
+    let releaseInert: (() => void) | undefined
+
+    const syncInert = () => {
+      const element = instance?.proxy?.$el
+      const wanted = props.trapFocus && snapshot.value.items.length > 0 && element instanceof HTMLElement
+      if (wanted && !releaseInert) releaseInert = inertOutside(element, { exclude: `[${HOST_ATTRIBUTE}]` })
+      else if (!wanted && releaseInert) {
+        releaseInert()
+        releaseInert = undefined
+      }
+    }
 
     onMounted(() => {
-      if (!props.unstyled) injectStyles()
+      if (!props.unstyled) injectStyles(document, props.nonce)
       detach = manager.attachHost(props.namespace)
-      if (props.behaviors) release = acquireBehaviors(manager.core)
+      if (props.behaviors) release = acquireBehaviors(manager.core, { escape: { event: props.escapeEvent } })
+      syncInert()
     })
     watch(
       () => props.namespace,
@@ -36,11 +64,14 @@ export const ModalContainer = defineComponent({
         detach = manager.attachHost(namespace)
       },
     )
+    watch([snapshot, () => props.trapFocus], syncInert)
     onBeforeUnmount(() => {
       detach?.()
       release?.()
+      releaseInert?.()
       detach = undefined
       release = undefined
+      releaseInert = undefined
     })
 
     return () => {
@@ -48,7 +79,7 @@ export const ModalContainer = defineComponent({
       const last = items.length - 1
       return h(
         TransitionGroup,
-        { name: props.transition, appear: props.appear, tag: 'div' },
+        { name: props.transition, appear: props.appear, tag: 'div', [HOST_ATTRIBUTE]: '' },
         {
           default: () =>
             items.map((handle, index) =>
@@ -58,6 +89,7 @@ export const ModalContainer = defineComponent({
                 revision: handle.revision,
                 active: !options.singleShow || index === last,
                 trapFocus: props.trapFocus,
+                backdropTrigger: props.backdropTrigger,
               }),
             ),
         },

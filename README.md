@@ -85,13 +85,20 @@ const ok = await modal.prompt('confirm', { question: 'Delete?' })
 
 ## Packages
 
+Pick one adapter:
+
 | Import | For |
 |---|---|
 | `@risklight/modal/vue` | Vue 3 and Nuxt |
 | `@risklight/modal/react` | React 18 and 19 |
-| `@risklight/modal/vanilla` | Plain JS, HTML templates |
-| `@risklight/modal` | Core manager, no DOM |
-| `@risklight/modal/dom` | Focus trap, inert, Escape, scroll lock, dragging, dialog behaviour |
+| `@risklight/modal/vanilla` | Plain JS: no framework, server-rendered templates, Alpine, htmx, jQuery |
+
+Low-level entry points. You only need them to build an integration for another framework ([docs](https://risklight.github.io/modal/advanced/custom-integrations)):
+
+| Import | What it is |
+|---|---|
+| `@risklight/modal` | The manager: stacks, guards, prompts. No DOM. |
+| `@risklight/modal/dom` | Browser behaviour: focus trap, inert, Escape, scroll lock, dragging |
 | `@risklight/modal/style.css` | Default styles, if you disable injection |
 
 `vue`, `vue-router` and `react` are optional peer dependencies. It needs Node 22.12+ and is ESM only; `require()` works on Node 22.12+.

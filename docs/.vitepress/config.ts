@@ -39,8 +39,11 @@ export default defineConfig({
           { text: 'vue-router', link: '/adapters/vue-router' },
           { text: 'React', link: '/adapters/react' },
           { text: 'Plain JS', link: '/adapters/vanilla' },
-          { text: 'Core and DOM', link: '/adapters/core' },
         ],
+      },
+      {
+        text: 'Advanced',
+        items: [{ text: 'Custom integrations', link: '/advanced/custom-integrations' }],
       },
       { text: 'API reference', link: '/api' },
       { text: 'Live demo', link: '/demo' },

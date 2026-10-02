@@ -15,7 +15,7 @@ Requirements:
 | Vue 3 or Nuxt | `@risklight/modal/vue` | `createVueModal()` + `<ModalContainer>` |
 | React 18/19 | `@risklight/modal/react` | `createReactModal()` + `<ModalProvider>` + `<ModalContainer>` |
 | Plain JS | `@risklight/modal/vanilla` | `createVanillaModal()` |
-| Your own renderer | `@risklight/modal` + `@risklight/modal/dom` | `createModal()` |
+| Another framework (Svelte, Solid…) | see [Custom integrations](/advanced/custom-integrations) | `createModal()` |
 
 ## Vue in 30 seconds
 

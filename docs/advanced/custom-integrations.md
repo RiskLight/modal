@@ -1,6 +1,13 @@
-# Core and DOM
+# Custom integrations
 
-Build your own renderer, or use modals without a UI framework.
+::: tip You probably do not need this page
+Use [Vue](/adapters/vue), [React](/adapters/react) or [Plain JS](/adapters/vanilla). Plain JS already covers pages without a framework, server-rendered templates, Alpine, htmx and jQuery. This page is for building an adapter for another framework, such as Svelte or Solid, or a custom renderer.
+:::
+
+All three adapters are built from two low-level entry points:
+
+- `@risklight/modal` is the manager: stacks, namespaces, guards and prompts. It has no DOM.
+- `@risklight/modal/dom` provides the browser behaviour: focus trap, `inert`, Escape, scroll lock and dragging.
 
 ```ts
 import { createModal } from '@risklight/modal'

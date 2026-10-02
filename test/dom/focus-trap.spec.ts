@@ -223,3 +223,51 @@ describe('trapFocus fallbacks', () => {
     expect(() => off()).not.toThrow()
   })
 })
+
+describe('trapFocus review fixes', () => {
+  let opener: HTMLButtonElement
+  beforeEach(() => {
+    opener = document.createElement('button')
+    document.body.append(opener)
+    opener.focus()
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('skips elements that are not rendered', () => {
+    const root = build('<button id="gone" style="display:none">x</button><button id="shown">y</button>')
+    expect(focusableElements(root).map(el => el.id)).toEqual(['shown'])
+  })
+
+  it('focuses fallbackFocus instead of the root when nothing is focusable', () => {
+    const root = build('<section id="surface"><p>plain</p></section>')
+    const surface = root.querySelector<HTMLElement>('#surface')!
+    const off = trapFocus(root, { fallbackFocus: surface })
+    expect(document.activeElement).toBe(surface)
+    expect(surface.getAttribute('tabindex')).toBe('-1')
+    expect(root.hasAttribute('tabindex')).toBe(false)
+    off()
+    expect(surface.hasAttribute('tabindex')).toBe(false)
+  })
+
+  it('keeps focus where it is when released without returning focus', () => {
+    const root = build('<button id="one">1</button>')
+    const off = trapFocus(root)
+    off({ returnFocus: false })
+    expect(document.activeElement?.id).toBe('one')
+  })
+
+  it('returns focus only when focus is inside the trap or nowhere', () => {
+    const root = build('<button id="one">1</button>')
+    const other = build('<button id="other">o</button>')
+    const off = trapFocus(root)
+    off({ returnFocus: false })
+    const again = trapFocus(root)
+    const outsideTrap = trapFocus(other)
+    outsideTrap({ returnFocus: false })
+    ;(other.querySelector('#other') as HTMLElement).focus()
+    again()
+    expect(document.activeElement?.id).toBe('other')
+  })
+})

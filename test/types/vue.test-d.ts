@@ -2,6 +2,7 @@ import { defineComponent, ref } from 'vue'
 import { createVueModal, type ComponentProps, type VueModalHandle } from '../../src/vue'
 
 const Title = defineComponent({ props: { title: { type: String, required: true }, count: Number } })
+const Optional = defineComponent({ props: { count: Number } })
 
 describe('vue types', () => {
   const modal = createVueModal()
@@ -27,7 +28,19 @@ describe('vue types', () => {
     expectTypeOf(modal.prompt<string>('name')).toEqualTypeOf<Promise<string | null>>()
   })
 
-  it('types handles', () => {
-    expectTypeOf(modal.push<typeof Title, boolean>(Title, { title: 'x' })).toEqualTypeOf<Promise<VueModalHandle<boolean>>>()
+  it('lets the result type be given on its own', () => {
+    expectTypeOf(modal.push<boolean>(Title, { title: 'x' })).toEqualTypeOf<Promise<VueModalHandle<boolean>>>()
+    expectTypeOf(modal.open<string>(Title, { title: 'x' })).toEqualTypeOf<Promise<VueModalHandle<string>>>()
+  })
+
+  it('requires props when the component has required props', () => {
+    expectTypeOf(modal.push).parameters.not.toEqualTypeOf<[typeof Title]>()
+    type Args = Parameters<typeof modal.open<unknown, typeof Title>>
+    expectTypeOf<Args[1]>().not.toBeUndefined()
+    expectTypeOf<undefined>().not.toMatchTypeOf<Args[1]>()
+  })
+
+  it('keeps props optional when every prop is optional', () => {
+    expectTypeOf(modal.push).toBeCallableWith(Optional)
   })
 })

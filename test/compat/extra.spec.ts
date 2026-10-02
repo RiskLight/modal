@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { defineComponent, onMounted, watch } from 'vue'
 import { ModalError as CoreModalError } from '../../src'
 import {
   closeById,
@@ -135,5 +136,36 @@ describe('consumer scenario', () => {
     await expect(pushModal(ModalTitle)).rejects.toThrowError(ModalError.RejectedByBeforeEach())
     await closeModal()
     expect(wrapper.text()).toBe('')
+  })
+})
+
+describe('compat review fixes', () => {
+  it('promptModal keeps a value resolved while the modal is mounting', async () => {
+    mount(container)
+    const AutoConfirm = defineComponent({
+      emits: [Modal.EVENT_PROMPT],
+      setup(_props, { emit }) {
+        onMounted(() => emit(Modal.EVENT_PROMPT, 'auto'))
+        return () => null
+      },
+    })
+    expect(await promptModal(AutoConfirm)).toBe('auto')
+  })
+
+  it('updates closed for synchronous watchers after the modal is fully closed', async () => {
+    mount(container)
+    const modal = await pushModal(ModalTitle)
+    const seen: boolean[] = []
+    watch(() => modal.closed.value, value => void seen.push(value), { flush: 'sync' })
+    await modal.close()
+    expect(seen.at(-1)).toBe(true)
+  })
+
+  it('keeps upstream backdrop semantics: pointerdown closes', async () => {
+    const wrapper = mount(container)
+    const modal = await pushModal(ModalTitle)
+    await wrapper.find('.modal-container').trigger('pointerdown')
+    await wait()
+    expect(modal.closed.value).toBe(true)
   })
 })

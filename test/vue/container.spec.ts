@@ -2,10 +2,15 @@ import { computed, h, nextTick, reactive, ref, TransitionGroup } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createVueModal, ModalContainer } from '../../src/vue'
 import { flush } from '../helpers'
-import { Draggable, Emitter, Focusable, mountContainer, Title, WithSlots } from './fixtures'
+import { Draggable, Emitter, Focusable, Headed, mountContainer, Title, WithSlots } from './fixtures'
+
+async function backdropClick(wrapper: { find(selector: string): { trigger(event: string): Promise<void> } }) {
+  await wrapper.find('.modal-container').trigger('pointerdown')
+  await wrapper.find('.modal-container').trigger('click')
+}
 
 function escape() {
-  document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true, cancelable: true }))
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
 }
 
 describe('ModalContainer rendering', () => {
@@ -62,22 +67,43 @@ describe('ModalContainer rendering', () => {
     expect(wrapper.attributes('data-x')).toBe('1')
   })
 
-  it('marks each modal as an accessible dialog', async () => {
+  it('marks the modal surface as an accessible dialog and leaves the backdrop without a role', async () => {
     const modal = createVueModal()
     const wrapper = mountContainer(modal)
     await modal.push(Title, { title: 'a' })
-    const item = wrapper.find('.modal-container')
-    expect(item.attributes('role')).toBe('dialog')
-    expect(item.attributes('aria-modal')).toBe('true')
+    const surface = wrapper.find('.title')
+    expect(surface.attributes('role')).toBe('dialog')
+    expect(surface.attributes('aria-modal')).toBe('true')
+    expect(wrapper.find('.modal-container').attributes('role')).toBeUndefined()
   })
 
-  it('applies aria-label and aria-labelledby from options extra', async () => {
+  it('applies aria-label and aria-labelledby from options extra to the surface', async () => {
     const modal = createVueModal()
     const wrapper = mountContainer(modal)
     await modal.push(Title, {}, { extra: { ariaLabel: 'Settings', ariaLabelledby: 'heading' } })
-    const item = wrapper.find('.modal-container')
-    expect(item.attributes('aria-label')).toBe('Settings')
-    expect(item.attributes('aria-labelledby')).toBe('heading')
+    const surface = wrapper.find('.title')
+    expect(surface.attributes('aria-label')).toBe('Settings')
+    expect(surface.attributes('aria-labelledby')).toBe('heading')
+  })
+
+  it('labels the dialog by its first heading when no label is given', async () => {
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal)
+    await modal.push(Headed)
+    const surface = wrapper.find('.headed')
+    const heading = wrapper.find('h2')
+    expect(heading.attributes('id')).toBeTruthy()
+    expect(surface.attributes('aria-labelledby')).toBe(heading.attributes('id'))
+  })
+
+  it('keeps an existing heading id and an explicit label', async () => {
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal)
+    await modal.push(Headed, { headingId: 'given' })
+    expect(wrapper.find('.headed').attributes('aria-labelledby')).toBe('given')
+    await modal.push(Headed, {}, { extra: { ariaLabel: 'Named' } })
+    const surfaces = wrapper.findAll('.headed')
+    expect(surfaces[1]!.attributes('aria-labelledby')).toBeUndefined()
   })
 
   it('keeps upstream class names for styling compatibility', async () => {
@@ -293,23 +319,52 @@ describe('ModalContainer closing', () => {
     document.body.removeAttribute('style')
   })
 
-  it('closes on background pointerdown with background: true', async () => {
+  it('closes on a backdrop click with background: true', async () => {
     const modal = createVueModal()
     const wrapper = mountContainer(modal)
     const handle = await modal.push(Title)
     const guard = vi.fn()
     handle.onBeforeClose(guard)
-    await wrapper.find('.modal-container').trigger('pointerdown')
+    await backdropClick(wrapper)
     await flush()
     expect(handle.closed).toBe(true)
     expect(guard).toHaveBeenCalledWith({ background: true, esc: false, route: false })
   })
 
-  it('ignores pointerdown inside the modal content', async () => {
+  it('does not close on pointerdown alone', async () => {
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal)
+    const handle = await modal.push(Title)
+    await wrapper.find('.modal-container').trigger('pointerdown')
+    await flush()
+    expect(handle.closed).toBe(false)
+  })
+
+  it('does not close when the press started inside the content', async () => {
     const modal = createVueModal()
     const wrapper = mountContainer(modal)
     const handle = await modal.push(Title)
     await wrapper.find('.title').trigger('pointerdown')
+    await wrapper.find('.modal-container').trigger('click')
+    await flush()
+    expect(handle.closed).toBe(false)
+  })
+
+  it('closes on pointerdown when backdropTrigger is pointerdown', async () => {
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal, { backdropTrigger: 'pointerdown' })
+    const handle = await modal.push(Title)
+    await wrapper.find('.modal-container').trigger('pointerdown')
+    await flush()
+    expect(handle.closed).toBe(true)
+  })
+
+  it('ignores clicks inside the modal content', async () => {
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal)
+    const handle = await modal.push(Title)
+    await wrapper.find('.title').trigger('pointerdown')
+    await wrapper.find('.title').trigger('click')
     await flush()
     expect(handle.closed).toBe(false)
   })
@@ -318,11 +373,11 @@ describe('ModalContainer closing', () => {
     const modal = createVueModal()
     const wrapper = mountContainer(modal)
     const handle = await modal.push(Title, {}, { backgroundClose: false })
-    await wrapper.find('.modal-container').trigger('pointerdown')
+    await backdropClick(wrapper)
     await flush()
     expect(handle.closed).toBe(false)
     handle.backgroundClose = true
-    await wrapper.find('.modal-container').trigger('pointerdown')
+    await backdropClick(wrapper)
     await flush()
     expect(handle.closed).toBe(true)
   })
@@ -332,9 +387,18 @@ describe('ModalContainer closing', () => {
     const wrapper = mountContainer(modal)
     const handle = await modal.push(Title)
     handle.onBeforeClose(() => false)
-    await wrapper.find('.modal-container').trigger('pointerdown')
+    await backdropClick(wrapper)
     await flush()
     expect(handle.closed).toBe(false)
+  })
+
+  it('listens to keyup when escapeEvent is keyup', async () => {
+    const modal = createVueModal()
+    mountContainer(modal, { escapeEvent: 'keyup' })
+    const handle = await modal.push(Title)
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flush()
+    expect(handle.closed).toBe(true)
   })
 
   it('closes on Escape for any mounted namespace', async () => {
@@ -352,7 +416,7 @@ describe('ModalContainer closing', () => {
     const modal = createVueModal()
     mountContainer(modal)
     mountContainer(modal, { namespace: 'side' })
-    expect(add.mock.calls.filter(([type]) => type === 'keyup')).toHaveLength(1)
+    expect(add.mock.calls.filter(([type]) => type === 'keydown')).toHaveLength(1)
     add.mockRestore()
   })
 
@@ -562,5 +626,98 @@ describe('ModalContainer styles', () => {
   it('does not inject styles when unstyled', () => {
     mountContainer(createVueModal(), { unstyled: true })
     expect(document.getElementById('risklight-modal-styles')).toBeNull()
+  })
+})
+
+describe('ModalContainer review fixes', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+    document.head.innerHTML = ''
+  })
+
+  it('makes content outside the modal hosts inert while a modal is open', async () => {
+    const page = document.createElement('main')
+    document.body.append(page)
+    const modal = createVueModal()
+    const host = mountContainer(modal)
+    const side = mountContainer(modal, { namespace: 'side' })
+    const handle = await modal.push(Title)
+    expect(page.inert).toBe(true)
+    expect((host.element as HTMLElement).inert).toBe(false)
+    expect((side.element as HTMLElement).inert).toBe(false)
+    await handle.close()
+    await nextTick()
+    expect(page.inert).toBe(false)
+  })
+
+  it('keeps an element inert that was inert before', async () => {
+    const page = document.createElement('main')
+    page.inert = true
+    document.body.append(page)
+    const modal = createVueModal()
+    mountContainer(modal)
+    const handle = await modal.push(Title)
+    await handle.close()
+    await nextTick()
+    expect(page.inert).toBe(true)
+  })
+
+  it('does not make the page inert when trapFocus is false', async () => {
+    const page = document.createElement('main')
+    document.body.append(page)
+    const modal = createVueModal()
+    mountContainer(modal, { trapFocus: false })
+    await modal.push(Title)
+    expect(page.inert).toBe(false)
+  })
+
+  it('returns focus to the lower modal after closing the one shown over it with singleShow', async () => {
+    const modal = createVueModal({ defaults: { singleShow: true } })
+    mountContainer(modal)
+    await modal.push(Focusable)
+    await nextTick()
+    ;(document.getElementById('last') as HTMLElement).focus()
+    const top = await modal.push(Title)
+    await nextTick()
+    await top.close()
+    await flush()
+    expect(document.activeElement?.id).toBe('last')
+  })
+
+  it('sets the nonce on the injected style element', () => {
+    mountContainer(createVueModal(), { nonce: 'abc' })
+    expect((document.getElementById('risklight-modal-styles') as HTMLStyleElement).nonce).toBe('abc')
+  })
+
+  it('binds dragging when draggable is enabled after mount', async () => {
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal)
+    const handle = await modal.push(Draggable)
+    handle.draggable = true
+    await nextTick()
+    const el = wrapper.find('.draggable').element as HTMLElement
+    el.dispatchEvent(new PointerEvent('pointerdown', { clientX: 0, clientY: 0, bubbles: true, button: 0, pointerType: 'mouse' }))
+    document.dispatchEvent(new PointerEvent('pointermove', { clientX: 4, clientY: 2, bubbles: true, pointerType: 'mouse' }))
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'mouse' }))
+    expect(el.style.transform).toBe('translate(4px, 2px)')
+  })
+
+  it('survives an invalid draggable selector', async () => {
+    const modal = createVueModal()
+    const wrapper = mountContainer(modal)
+    await expect(modal.push(Draggable, {}, { draggable: '[[[' })).resolves.toBeTruthy()
+    expect(wrapper.find('.draggable').exists()).toBe(true)
+  })
+
+  it('does not re-render the modal body on unrelated item updates when slots are passed', async () => {
+    const modal = createVueModal()
+    mountContainer(modal)
+    let renders = 0
+    const Counted = { setup: (_p: unknown, { slots }: { slots: Record<string, () => unknown> }) => () => { renders++; return h('div', slots.default?.() as never) } }
+    const handle = await modal.push(Counted, {}, { slots: { default: () => [h('i', 'x')] } })
+    const before = renders
+    handle.on('noop', () => {})
+    await nextTick()
+    expect(renders).toBe(before)
   })
 })

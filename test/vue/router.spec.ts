@@ -284,6 +284,47 @@ describe('router integration', () => {
   })
 })
 
+describe('router review fixes', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('keeps the modal open when a later guard aborts the navigation away', async () => {
+    const ctx = setup()
+    await go(ctx.router, '/')
+    await go(ctx.router, '/modal')
+    const handle = ctx.modal.current()!
+    const remove = ctx.router.beforeEach(to => (to.path === '/page' ? false : undefined))
+    await go(ctx.router, '/page')
+    expect(ctx.router.currentRoute.value.path).toBe('/modal')
+    expect(handle.closed).toBe(false)
+    remove()
+    ctx.dispose()
+  })
+
+  it('opens the modal of the initial route when the container mounts after the router is ready', async () => {
+    const modal = createVueModal()
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: Home }, { path: '/m', component: createModalRoute(RouteModal) }] })
+    const dispose = installModalRouter(router, modal)
+    await router.push('/m')
+    await router.isReady()
+    await flush()
+    const App = defineComponent({ render: () => h('div', [h(RouterView), h(ModalContainer)]) })
+    const wrapper = mount(App, { global: { plugins: [router, modal] }, attachTo: document.body })
+    await flush()
+    await nextTick()
+    expect(wrapper.find('.route-modal').exists()).toBe(true)
+    dispose()
+  })
+
+  it('throws when installed on the same router with another manager', () => {
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: Home }] })
+    const dispose = installModalRouter(router, createVueModal())
+    expect(() => installModalRouter(router, createVueModal())).toThrow(/another modal manager/)
+    dispose()
+  })
+})
+
 describe('router integration with separate managers', () => {
   it('uses the manager it was installed with', async () => {
     const one = createVueModal({ requireHost: false })

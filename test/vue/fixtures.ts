@@ -85,3 +85,11 @@ export const Draggable = defineComponent({
 export function mountContainer(manager: VueModalManager, props: Record<string, unknown> = {}, attrs: Record<string, unknown> = {}) {
   return mount(ModalContainer, { props, attrs, global: { plugins: [manager] }, attachTo: document.body })
 }
+
+export const Headed = defineComponent({
+  name: 'Headed',
+  props: { headingId: { type: String, default: undefined } },
+  render() {
+    return h('section', { class: 'headed' }, [h('h2', { id: this.headingId }, 'Heading'), h('p', 'body')])
+  },
+})

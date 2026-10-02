@@ -3,7 +3,7 @@ import { acquireBehaviors } from '../../src/dom'
 import { A, flush } from '../helpers'
 
 function escape() {
-  document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true, cancelable: true }))
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
 }
 
 describe('acquireBehaviors', () => {
@@ -16,7 +16,7 @@ describe('acquireBehaviors', () => {
     const m = createModal()
     const one = acquireBehaviors(m)
     const two = acquireBehaviors(m)
-    expect(add.mock.calls.filter(([type]) => type === 'keyup')).toHaveLength(1)
+    expect(add.mock.calls.filter(([type]) => type === 'keydown')).toHaveLength(1)
     add.mockRestore()
     const h = await m.push(A)
     expect(document.body.style.overflow).toBe('hidden')
@@ -61,6 +61,16 @@ describe('acquireBehaviors', () => {
     escape()
     await flush()
     expect(h.closed).toBe(false)
+    release()
+  })
+
+  it('passes escape options through', async () => {
+    const m = createModal()
+    const release = acquireBehaviors(m, { escape: { event: 'keyup' } })
+    const h = await m.push(A)
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flush()
+    expect(h.closed).toBe(true)
     release()
   })
 

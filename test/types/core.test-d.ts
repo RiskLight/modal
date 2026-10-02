@@ -24,6 +24,10 @@ describe('core types', () => {
     expectTypeOf(m.push).toBeCallableWith('name')
   })
 
+  it('exports modal-prefixed event types', () => {
+    expectTypeOf<import('../../src').ModalCloseEvent>().toEqualTypeOf<{ background: boolean; esc: boolean; route: boolean }>()
+  })
+
   it('types snapshots', () => {
     const m = createModal<Comp>()
     expectTypeOf(m.getSnapshot()).toEqualTypeOf<NamespaceSnapshot<Comp>>()

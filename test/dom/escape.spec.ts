@@ -3,7 +3,7 @@ import { bindEscape } from '../../src/dom'
 import { A, B, deferred, flush } from '../helpers'
 
 function press(init: KeyboardEventInit & { type?: string } = {}, target: EventTarget = document): KeyboardEvent {
-  const event = new KeyboardEvent(init.type ?? 'keyup', { key: 'Escape', bubbles: true, cancelable: true, ...init })
+  const event = new KeyboardEvent(init.type ?? 'keydown', { key: 'Escape', bubbles: true, cancelable: true, ...init })
   target.dispatchEvent(event)
   return event
 }
@@ -47,18 +47,38 @@ describe('bindEscape', () => {
     expect(a.closed).toBe(false)
   })
 
-  it('ignores keydown by default and listens to it when configured', async () => {
+  it('ignores keyup by default and listens to it when configured', async () => {
     const m = createModal()
     dispose = bindEscape(m)
     const a = await m.push(A)
-    press({ type: 'keydown' })
+    press({ type: 'keyup' })
     await flush()
     expect(a.closed).toBe(false)
     dispose()
-    dispose = bindEscape(m, { event: 'keydown' })
-    press({ type: 'keydown' })
+    dispose = bindEscape(m, { event: 'keyup' })
+    press({ type: 'keyup' })
     await flush()
     expect(a.closed).toBe(true)
+  })
+
+  it('ignores auto-repeated Escape', async () => {
+    const m = createModal()
+    dispose = bindEscape(m)
+    const a = await m.push(A)
+    press({ repeat: true })
+    await flush()
+    expect(a.closed).toBe(false)
+  })
+
+  it('closes a modal that allows Escape inside a namespace that does not', async () => {
+    const m = createModal({ namespaces: { quiet: { escClose: false } } })
+    dispose = bindEscape(m)
+    const a = await m.push(A)
+    const loud = await m.push(B, {}, { namespace: 'quiet', escClose: true })
+    press()
+    await flush()
+    expect(loud.closed).toBe(true)
+    expect(a.closed).toBe(false)
   })
 
   it('closes modals of non-default namespaces', async () => {
@@ -160,7 +180,7 @@ describe('bindEscape', () => {
     const a = await m.push(A)
     const input = document.createElement('input')
     document.body.append(input)
-    input.addEventListener('keyup', e => e.preventDefault())
+    input.addEventListener('keydown', e => e.preventDefault())
     press({}, input)
     await flush()
     expect(a.closed).toBe(false)
@@ -174,7 +194,7 @@ describe('bindEscape', () => {
     const a = await m.push(A)
     off()
     off()
-    expect(remove).toHaveBeenCalledWith('keyup', expect.any(Function))
+    expect(remove).toHaveBeenCalledWith('keydown', expect.any(Function))
     remove.mockRestore()
     press()
     await flush()

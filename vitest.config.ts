@@ -18,6 +18,7 @@ export default defineConfig({
           name: 'browser',
           environment: 'happy-dom',
           setupFiles: ['test/setup-browser.ts'],
+          alias: { vue: 'vue/dist/vue.esm-bundler.js' },
           css: { include: [/style\.css/] },
           include: ['test/{dom,vue,compat}/**/*.spec.ts'],
         },

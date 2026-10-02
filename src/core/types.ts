@@ -87,6 +87,7 @@ export interface ModalHandle<C = unknown, R = unknown> {
   instance: unknown
   close(event?: Partial<ModalCloseEvent>): Promise<boolean>
   resolve(value: R): Promise<boolean>
+  setProps(props: unknown): void
   onBeforeClose(guard: CloseGuard): () => void
   onClosed(listener: ClosedListener): () => void
   on(event: string, listener: ModalEventListener): () => void

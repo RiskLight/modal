@@ -65,7 +65,6 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
   readonly id: ModalId = nextId++
   readonly namespace: Namespace
   readonly component: C
-  readonly props: unknown
   readonly name: string | undefined
   readonly isRoute: boolean
   readonly extra: Readonly<Record<string, unknown>>
@@ -74,6 +73,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
   instance: unknown = undefined
 
   #host: HandleHost
+  #props: unknown
   #backgroundClose: boolean
   #escClose: boolean | undefined
   #draggable: boolean | string
@@ -92,7 +92,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     this.#host = host
     this.namespace = init.namespace
     this.component = init.component
-    this.props = init.props
+    this.#props = init.props
     this.name = init.name
     this.isRoute = init.isRoute
     this.extra = init.extra
@@ -115,6 +115,16 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
 
   get revision(): number {
     return this.#revision
+  }
+
+  get props(): unknown {
+    return this.#props
+  }
+
+  setProps(props: unknown): void {
+    if (this.closed || props === this.#props) return
+    this.#props = props
+    this.#changed()
   }
 
   get backgroundClose(): boolean {

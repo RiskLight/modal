@@ -2,7 +2,12 @@ import { isRecord } from '../core/guards.js'
 import { report } from '../core/report.js'
 import type { VanillaComponent, VanillaModalHandle, VanillaRendered } from './types.js'
 
-export type TemplateSetup<P> = (root: Element, props: P, handle: VanillaModalHandle) => void | (() => void)
+export interface TemplateHooks<P> {
+  destroy?: (() => void) | undefined
+  update?: ((props: P) => void) | undefined
+}
+
+export type TemplateSetup<P> = (root: Element, props: P, handle: VanillaModalHandle) => void | (() => void) | TemplateHooks<P>
 
 type Fields = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 
@@ -24,7 +29,7 @@ function parseValue(raw: string): unknown {
   }
 }
 
-function bind(root: Element, props: unknown, handle: VanillaModalHandle): void {
+function bindProps(root: Element, props: unknown): void {
   const values = isRecord(props) ? props : {}
   each(root, '[data-prop]', element => {
     const value = values[element.getAttribute('data-prop') ?? '']
@@ -32,6 +37,9 @@ function bind(root: Element, props: unknown, handle: VanillaModalHandle): void {
     if (isField(element)) element.value = text
     else element.textContent = text
   })
+}
+
+function bindActions(root: Element, handle: VanillaModalHandle): void {
   each(root, '[data-close]', element => {
     element.addEventListener('click', () => {
       handle.close().catch(report)
@@ -64,12 +72,25 @@ function materialize(template: HTMLTemplateElement): Element {
   return surface
 }
 
+function hooksOf<P>(result: void | (() => void) | TemplateHooks<P>): TemplateHooks<P> {
+  if (typeof result === 'function') return { destroy: result }
+  return result ?? {}
+}
+
 function component<P>(resolveTemplate: () => HTMLTemplateElement, setup?: TemplateSetup<P>): VanillaComponent<P> {
   return (props, handle): VanillaRendered => {
     const root = materialize(resolveTemplate())
-    bind(root, props, handle)
-    const cleanup = setup?.(root, props, handle)
-    return { element: root, destroy: typeof cleanup === 'function' ? cleanup : undefined }
+    bindProps(root, props)
+    bindActions(root, handle)
+    const hooks = hooksOf(setup?.(root, props, handle))
+    return {
+      element: root,
+      destroy: hooks.destroy,
+      update: next => {
+        bindProps(root, next)
+        if (hooks.update) Reflect.apply(hooks.update, undefined, [next])
+      },
+    }
   }
 }
 

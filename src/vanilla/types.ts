@@ -4,6 +4,7 @@ import type { BackdropTrigger } from '../dom/dialog.js'
 export interface VanillaRendered {
   element: Node
   destroy?: (() => void) | undefined
+  update?: ((props: unknown) => void) | undefined
 }
 
 export type VanillaComponent<P = any> = (props: P, handle: VanillaModalHandle) => Node | string | VanillaRendered

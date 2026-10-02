@@ -9,7 +9,7 @@ import { injectStyles } from '../dom/styles.js'
 import { findPageTemplate, fromTemplate } from './template.js'
 import type { MountOptions, VanillaComponent, VanillaModalCreateOptions, VanillaModalManager, VanillaRendered } from './types.js'
 
-export { fromHTML, fromTemplate, type TemplateSetup } from './template.js'
+export { fromHTML, fromTemplate, type TemplateHooks, type TemplateSetup } from './template.js'
 
 export type * from './types.js'
 
@@ -23,6 +23,8 @@ interface Rendered {
   root: HTMLElement
   dialog: DialogItem
   destroy: (() => void) | undefined
+  update: ((props: unknown) => void) | undefined
+  props: unknown
 }
 
 function noop(): void {}
@@ -46,10 +48,16 @@ function asSurface(node: Node): Node {
   return surface
 }
 
-function toNode(output: Node | string | VanillaRendered): { element: Node; destroy: (() => void) | undefined } {
-  if (typeof output === 'string') return { element: asSurface(document.createTextNode(output)), destroy: undefined }
-  if (isRendered(output)) return { element: asSurface(output.element), destroy: output.destroy }
-  return { element: asSurface(output), destroy: undefined }
+interface Output {
+  element: Node
+  destroy: (() => void) | undefined
+  update: ((props: unknown) => void) | undefined
+}
+
+function toNode(output: Node | string | VanillaRendered): Output {
+  if (typeof output === 'string') return { element: asSurface(document.createTextNode(output)), destroy: undefined, update: undefined }
+  if (isRendered(output)) return { element: asSurface(output.element), destroy: output.destroy, update: output.update }
+  return { element: asSurface(output), destroy: undefined, update: undefined }
 }
 
 export function createVanillaModal(options: VanillaModalCreateOptions = {}): VanillaModalManager {
@@ -96,13 +104,14 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
         labels: dialogLabelAttrs(handle.extra),
         surfaceClass: SURFACE_CLASS,
       })
-      const entry: Rendered = { root, dialog, destroy: undefined }
+      const entry: Rendered = { root, dialog, destroy: undefined, update: undefined, props: handle.props }
       rendered.set(handle, entry)
       root.addEventListener('pointerdown', event => dialog.pointerdown(event))
       root.addEventListener('click', event => dialog.click(event))
       try {
         const output = toNode(handle.component(handle.props, handle))
         entry.destroy = output.destroy
+        entry.update = output.update
         root.append(output.element)
       } catch (error) {
         report(error)
@@ -145,6 +154,14 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
         if (!rendered.has(handle)) render(handle)
         const entry = rendered.get(handle)
         if (!entry || handle.closed) return
+        if (entry.props !== handle.props) {
+          entry.props = handle.props
+          try {
+            entry.update?.(handle.props)
+          } catch (error) {
+            report(error)
+          }
+        }
         const active = !namespaceOptions.singleShow || index === last
         entry.root.style.display = active ? '' : 'none'
         entry.dialog.update({ active })

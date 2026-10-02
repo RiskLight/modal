@@ -38,4 +38,5 @@ export interface ModalContainerProps extends Omit<HTMLAttributes<HTMLDivElement>
   backdropTrigger?: BackdropTrigger | undefined
   escapeEvent?: 'keydown' | 'keyup' | undefined
   allowOutside?: string | undefined
+  transition?: string | false | undefined
 }

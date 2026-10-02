@@ -6,6 +6,7 @@ import { acquireBehaviors } from '../dom/behaviors.js'
 import { createDialogItem, dialogLabelAttrs, type DialogItem } from '../dom/dialog.js'
 import { inertOutside } from '../dom/inert.js'
 import { injectStyles } from '../dom/styles.js'
+import { enterTransition, leaveTransition } from '../dom/transition.js'
 import { createVanillaRouter } from './router.js'
 import { findPageTemplate, fromTemplate } from './template.js'
 import type { MountOptions, VanillaComponent, VanillaModalCreateOptions, VanillaModalManager, VanillaRendered } from './types.js'
@@ -26,6 +27,7 @@ interface Rendered {
   destroy: (() => void) | undefined
   update: ((props: unknown) => void) | undefined
   props: unknown
+  cancelEnter: (() => void) | undefined
 }
 
 function noop(): void {}
@@ -82,6 +84,7 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
       escapeEvent = 'keydown',
       allowOutside,
       className,
+      transition = 'modal-list',
     } = mountOptions
     const parent = resolveTarget(target)
     const host = document.createElement('div')
@@ -105,7 +108,7 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
         labels: dialogLabelAttrs(handle.extra),
         surfaceClass: SURFACE_CLASS,
       })
-      const entry: Rendered = { root, dialog, destroy: undefined, update: undefined, props: handle.props }
+      const entry: Rendered = { root, dialog, destroy: undefined, update: undefined, props: handle.props, cancelEnter: undefined }
       rendered.set(handle, entry)
       root.addEventListener('pointerdown', event => dialog.pointerdown(event))
       root.addEventListener('click', event => dialog.click(event))
@@ -122,16 +125,34 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
       if (handle.closed) return
       host.append(root)
       dialog.mount(root)
+      if (transition) entry.cancelEnter = enterTransition(root, transition)
     }
 
-    const remove = (entry: Rendered) => {
-      entry.dialog.unmount()
+    const leaving = new Set<() => void>()
+
+    const finish = (entry: Rendered) => {
       try {
         entry.destroy?.()
       } catch (error) {
         report(error)
       }
       entry.root.remove()
+    }
+
+    const remove = (entry: Rendered, animate: boolean) => {
+      entry.dialog.unmount()
+      entry.cancelEnter?.()
+      if (!animate || !transition || !entry.root.isConnected) {
+        finish(entry)
+        return
+      }
+      const ticket = { stop: (): void => {}, done: false }
+      ticket.stop = leaveTransition(entry.root, transition, () => {
+        ticket.done = true
+        leaving.delete(ticket.stop)
+        finish(entry)
+      })
+      if (!ticket.done) leaving.add(ticket.stop)
     }
 
     let syncing = false
@@ -147,7 +168,7 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
       for (const [handle, entry] of rendered) {
         if (items.includes(handle) && !handle.closed) continue
         rendered.delete(handle)
-        remove(entry)
+        remove(entry, true)
       }
       const last = items.length - 1
       items.forEach((handle, index) => {
@@ -197,7 +218,8 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
       unsubscribe()
       releaseInert?.()
       releaseInert = undefined
-      for (const entry of rendered.values()) remove(entry)
+      for (const stop of Array.from(leaving)) stop()
+      for (const entry of rendered.values()) remove(entry, false)
       rendered.clear()
       release()
       detach()

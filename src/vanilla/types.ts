@@ -31,6 +31,7 @@ export interface MountOptions {
   escapeEvent?: 'keydown' | 'keyup' | undefined
   allowOutside?: string | undefined
   className?: string | undefined
+  transition?: string | false | undefined
 }
 
 export interface VanillaModalManager extends Omit<ModalManager<VanillaComponent>, 'open' | 'push' | 'prompt'> {

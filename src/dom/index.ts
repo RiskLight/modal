@@ -17,3 +17,4 @@ export {
   type DialogState,
 } from './dialog.js'
 export { injectStyles, MODAL_CSS, STYLE_ID } from './styles.js'
+export { enterTransition, leaveTransition } from './transition.js'

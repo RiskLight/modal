@@ -17,7 +17,7 @@ export default defineConfig({
         test: {
           name: 'browser',
           environment: 'happy-dom',
-          setupFiles: ['test/setup-browser.ts'],
+          setupFiles: ['test/setup-browser.ts', 'test/setup-motion.ts'],
           alias: { vue: 'vue/dist/vue.esm-bundler.js' },
           css: { include: [/style\.css/] },
           include: ['test/{dom,vue,vanilla}/**/*.spec.ts'],
@@ -28,6 +28,7 @@ export default defineConfig({
         test: {
           name: 'react',
           environment: 'happy-dom',
+          setupFiles: ['test/setup-motion.ts'],
           include: ['test/react/**/*.spec.tsx'],
         },
       },

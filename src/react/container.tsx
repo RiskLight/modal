@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect, useRef, useState } from 'react'
+import { useContext, useLayoutEffect, useReducer, useRef, useState } from 'react'
 import { DEFAULT_NAMESPACE } from '../core/constants.js'
 import { ModalError } from '../core/errors.js'
 import { isRecord } from '../core/guards.js'
@@ -7,6 +7,7 @@ import { createDialogItem, dialogLabelAttrs, type BackdropTrigger, type DialogIt
 import { inertOutside } from '../dom/inert.js'
 import { joinSelectors } from '../dom/selector.js'
 import { injectStyles } from '../dom/styles.js'
+import { enterTransition, leaveTransition } from '../dom/transition.js'
 import { HandleContext, ManagerContext } from './context.js'
 import { useModalSnapshot } from './hooks.js'
 import type { ModalContainerProps, ReactModalHandle } from './types.js'
@@ -22,6 +23,26 @@ interface ItemProps {
   trapFocus: boolean
   backdropTrigger: BackdropTrigger
   allowOutside: string | undefined
+  transition: string | false
+  leaving: boolean
+  onLeft: (handle: ReactModalHandle) => void
+}
+
+interface Displayed {
+  handle: ReactModalHandle
+  leaving: boolean
+}
+
+function mergeDisplayed(previous: readonly Displayed[], items: readonly ReactModalHandle[], animate: boolean, finished: ReadonlySet<ReactModalHandle>): Displayed[] {
+  const next: Displayed[] = []
+  for (const entry of previous) {
+    if (items.includes(entry.handle)) next.push({ handle: entry.handle, leaving: false })
+    else if (animate && !finished.has(entry.handle)) next.push({ handle: entry.handle, leaving: true })
+  }
+  for (const handle of items) {
+    if (!next.some(entry => entry.handle === handle)) next.push({ handle, leaving: false })
+  }
+  return next
 }
 
 function handlerName(event: string): string {
@@ -52,15 +73,30 @@ function useListeners(handle: ReactModalHandle, props: Record<string, unknown>):
   return listeners
 }
 
-function ModalItem({ handle, revision, active, trapFocus, backdropTrigger, allowOutside }: ItemProps) {
+function ModalItem({ handle, revision, active, trapFocus, backdropTrigger, allowOutside, transition, leaving, onLeft }: ItemProps) {
   const root = useRef<HTMLDivElement>(null)
   const [dialog] = useState<DialogItem>(() =>
     createDialogItem(handle, { active, trapFocus, backdropTrigger, allowOutside, labels: dialogLabelAttrs(handle.extra), surfaceClass: SURFACE_CLASS }),
   )
   useLayoutEffect(() => {
-    if (root.current) dialog.mount(root.current)
-    return () => dialog.unmount()
+    const element = root.current
+    if (element) dialog.mount(element)
+    const cancelEnter = element && transition ? enterTransition(element, transition) : undefined
+    return () => {
+      cancelEnter?.()
+      dialog.unmount()
+    }
   }, [dialog])
+  useLayoutEffect(() => {
+    const element = root.current
+    if (!leaving) return undefined
+    dialog.unmount()
+    if (!element || !transition) {
+      onLeft(handle)
+      return undefined
+    }
+    return leaveTransition(element, transition, () => onLeft(handle))
+  }, [leaving])
   useLayoutEffect(() => {
     dialog.update({ active, trapFocus, backdropTrigger, allowOutside })
   }, [dialog, active, trapFocus, backdropTrigger, allowOutside, revision])
@@ -94,6 +130,7 @@ export function ModalContainer({
   backdropTrigger = 'click',
   escapeEvent = 'keydown',
   allowOutside,
+  transition = 'modal-list',
   ...rest
 }: ModalContainerProps) {
   const provided = useContext(ManagerContext)
@@ -119,18 +156,33 @@ export function ModalContainer({
     [trapFocus, hasItems, allowOutside],
   )
 
-  const last = snapshot.items.length - 1
+  const displayedRef = useRef<Displayed[]>([])
+  const finished = useRef(new Set<ReactModalHandle>()).current
+  const [, rerender] = useReducer((count: number) => count + 1, 0)
+  const displayed = mergeDisplayed(displayedRef.current, snapshot.items, transition !== false, finished)
+  displayedRef.current = displayed
+  for (const handle of finished) {
+    if (!displayed.some(entry => entry.handle === handle)) finished.delete(handle)
+  }
+  const onLeft = (handle: ReactModalHandle) => {
+    finished.add(handle)
+    rerender()
+  }
+  const last = snapshot.items.at(-1)
   return (
     <div {...rest} ref={host} {...{ [HOST_ATTRIBUTE]: '' }}>
-      {snapshot.items.map((handle, index) => (
+      {displayed.map(({ handle, leaving }) => (
         <ModalItem
           key={handle.id}
           handle={handle}
           revision={handle.revision}
-          active={!snapshot.options.singleShow || index === last}
-          trapFocus={trapFocus}
+          active={leaving || !snapshot.options.singleShow || handle === last}
+          trapFocus={trapFocus && !leaving}
           backdropTrigger={backdropTrigger}
           allowOutside={allowOutside}
+          transition={transition}
+          leaving={leaving}
+          onLeft={onLeft}
         />
       ))}
     </div>

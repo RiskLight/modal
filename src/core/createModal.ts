@@ -38,6 +38,10 @@ function pickOptions(config: Partial<NamespaceOptions> | undefined): Partial<Nam
   return picked as Partial<NamespaceOptions>
 }
 
+function normalizeTimeout(value: number | false | undefined): number | false {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : false
+}
+
 function isEntry<C>(value: C | RegistryEntry<C>): value is RegistryEntry<C> {
   return typeof value === 'object' && value !== null && Object.hasOwn(value, 'component')
 }
@@ -170,12 +174,14 @@ export function createModal<C = unknown>(options: CreateModalOptions<C> = {}): M
       backgroundClose: open.backgroundClose ?? entry?.backgroundClose ?? resolved.backgroundClose,
       escClose: open.escClose ?? entry?.escClose,
       draggable: open.draggable ?? entry?.draggable ?? resolved.draggable,
+      timeout: normalizeTimeout(open.timeout ?? entry?.timeout ?? resolved.timeout),
     })
     const guard = options.guardFrom?.(component)
     if (typeof guard === 'function') handle.onBeforeClose(guard)
     handles.set(handle.id, handle as Handle<C, unknown>)
     stacks.set(namespace, [...stack(namespace), handle as Handle<C, unknown>])
     invalidate(namespace)
+    handle.startTimer()
     return handle
   }
 

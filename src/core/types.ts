@@ -22,6 +22,7 @@ export interface NamespaceOptions {
   singleShow: boolean
   backgroundClose: boolean
   draggable: boolean | string
+  timeout: number | false
 }
 
 export interface OpenContext<C> {
@@ -40,6 +41,7 @@ export interface ModalOptions<C> {
   draggable?: boolean | string
   beforeOpen?: BeforeOpen<C>
   isRoute?: boolean
+  timeout?: number | false
   extra?: Readonly<Record<string, unknown>>
 }
 
@@ -48,6 +50,7 @@ export interface RegistryEntry<C> {
   backgroundClose?: boolean
   escClose?: boolean
   draggable?: boolean | string
+  timeout?: number | false
   beforeOpen?: BeforeOpen<C>
 }
 
@@ -75,6 +78,7 @@ export interface ModalHandle<C = unknown, R = unknown> {
   readonly closed: boolean
   readonly revision: number
   readonly result: Promise<R | null>
+  readonly timeout: number | false
   backgroundClose: boolean
   escClose: boolean
   draggable: boolean | string

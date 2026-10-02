@@ -4,7 +4,7 @@ import { A, B, C } from '../helpers'
 describe('namespace options', () => {
   it('has sensible defaults', () => {
     const m = createModal()
-    expect(m.options()).toEqual({ escClose: true, scrollLock: true, singleShow: false, backgroundClose: true, draggable: false })
+    expect(m.options()).toEqual({ escClose: true, scrollLock: true, singleShow: false, backgroundClose: true, draggable: false, timeout: false })
   })
 
   it('applies defaults to every namespace', () => {

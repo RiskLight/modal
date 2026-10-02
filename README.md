@@ -73,7 +73,7 @@ onBeforeModalClose(event => (event.esc ? confirm('Discard changes?') : true))
 | `pop()`, `closeAll()`, `closeById(id)` | Close one modal, all of them, or one by id. All of them respect guards. |
 
 Props can be a plain object, a `ref`, a `reactive`, a `computed` or a getter, and the modal re-renders when they change. Props are inferred from the component. `options` accepts:
-- `namespace`, `backgroundClose`, `escClose`, `draggable` (`true` or a handle selector) and `beforeOpen`;
+- `namespace`, `backgroundClose`, `escClose`, `draggable` (`true` or a handle selector), `timeout` (auto-close after N ms, which suits toasts) and `beforeOpen`;
 - `slots`;
 - `extra.ariaLabel` and `extra.ariaLabelledby`.
 
@@ -103,7 +103,7 @@ Props can be a plain object, a `ref`, a `reactive`, a `computed` or a getter, an
 ```ts
 const modal = createVueModal({
   defaults: { escClose: true, scrollLock: true, backgroundClose: true, singleShow: false, beforeOpen: () => isLoggedIn() },
-  namespaces: { toast: { escClose: false, scrollLock: false } },
+  namespaces: { toast: { escClose: false, scrollLock: false, timeout: 3000 } },
   registry: { confirm: { component: ConfirmDelete, backgroundClose: false } },
 })
 
@@ -114,6 +114,8 @@ await modal.push('confirm', { title: 'By name' })
 - **`beforeOpen` order:** hooks run global, then namespace, then registry entry, then per-open. If any hook returns `false`, the open is cancelled.
 - **Escape:** closes the most recently opened modal whose namespace or own `escClose` allows it, across all namespaces. A modal that leaves `escClose` unset follows the namespace setting live. A modal opened with `escClose: false` blocks Escape while it is on top. A namespace with `escClose: false` and no per-modal override is skipped, which suits toasts.
 - **Containers:** the default namespace requires a mounted `<ModalContainer>`. Other namespaces don't.
+
+**Toasts.** A namespace with `timeout` works as a toast stack. Every modal in it closes after the timeout and still runs its guards; a per-open `timeout` overrides the namespace value, and `false` disables it. Render a toast namespace with `trapFocus: false`, then add your own positioning CSS, for example `.toasts .modal-container { position: static; background: none }`.
 
 ### vue-router
 
@@ -245,6 +247,9 @@ The upstream test suite is ported in `test/compat` and passes. You don't need `a
 - **Module resolution.** Subpath imports need `moduleResolution: "bundler"`, `"node16"` or `"nodenext"` in TypeScript. `require()` works on Node 22.12 and later.
 
 ## Development
+
+`playground-react/` is a local React app, ignored by git, that runs against the built package (`file:..`). To use it, run `npm run build` in the repository root, then `npm install` and `npm run dev` inside `playground-react/`.
+
 
 ```bash
 npm ci

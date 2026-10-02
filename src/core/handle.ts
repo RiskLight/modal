@@ -28,6 +28,7 @@ export interface HandleInit<C> {
   backgroundClose: boolean
   escClose: boolean | undefined
   draggable: boolean | string
+  timeout: number | false
 }
 
 interface Slot<T> {
@@ -60,6 +61,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
   readonly isRoute: boolean
   readonly extra: Readonly<Record<string, unknown>>
   readonly result: Promise<R | null>
+  readonly timeout: number | false
   instance: unknown = undefined
 
   #host: HandleHost
@@ -71,6 +73,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
   #pending: { value: R } | undefined
   #settle!: (value: R | null) => void
   #revision = 0
+  #timer: ReturnType<typeof setTimeout> | undefined
   #guards: Slot<CloseGuard>[] = []
   #closedListeners: Slot<ClosedListener>[] = []
   #events = new Map<string, Slot<ModalEventListener>[]>()
@@ -86,6 +89,7 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     this.#backgroundClose = init.backgroundClose
     this.#escClose = init.escClose
     this.#draggable = init.draggable
+    this.timeout = init.timeout
     this.result = new Promise<R | null>(resolve => {
       this.#settle = resolve
     })
@@ -220,9 +224,18 @@ export class Handle<C = unknown, R = unknown> implements ModalHandle<C, R> {
     return [...this.#events.keys()]
   }
 
+  startTimer(): void {
+    if (this.timeout === false || this.#timer !== undefined || this.closed) return
+    this.#timer = setTimeout(() => {
+      this.close().catch(() => {})
+    }, this.timeout)
+  }
+
   complete(event: ModalCloseEvent, notify: boolean): void {
     if (this.#status === 'closed') return
     this.#status = 'closed'
+    if (this.#timer !== undefined) clearTimeout(this.#timer)
+    this.#timer = undefined
     const listeners = notify ? this.#closedListeners.map(slot => slot.fn) : []
     const pending = this.#pending
     this.#guards = []

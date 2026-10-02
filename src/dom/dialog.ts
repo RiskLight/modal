@@ -61,6 +61,7 @@ function labelFromHeading(surface: HTMLElement): void {
 export function applyDialogDefaults(surface: HTMLElement): void {
   if (!surface.hasAttribute('role')) surface.setAttribute('role', 'dialog')
   if (!surface.hasAttribute('aria-modal')) surface.setAttribute('aria-modal', 'true')
+  if (!surface.hasAttribute('tabindex')) surface.setAttribute('tabindex', '-1')
   labelFromHeading(surface)
 }
 

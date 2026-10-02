@@ -43,3 +43,4 @@ First release. It is a rewrite of jenesius-vue-modal 1.11.9.
   - CSS is listed in `sideEffects`.
   - The `.d.ts` files no longer depend on `vue-router`.
 - **React** (`@risklight/modal/react`): `createReactModal()`, `ModalProvider`, `ModalContainer`, and the hooks `useModal`, `useCurrentModal`, `useBeforeModalClose`, `useModalResolve` and `useModalSnapshot` (on `useSyncExternalStore`). Dialog behaviour is shared with Vue through `createDialogItem` in `@risklight/modal/dom`.
+- **Auto-close:** a `timeout` option on namespaces, registry entries and individual opens, for toasts. The dialog surface gets `tabindex="-1"`, so a click inside keeps focus in the dialog. Checked in a real browser with the React playground.

@@ -59,6 +59,7 @@ describe('snapshots', () => {
       singleShow: true,
       backgroundClose: true,
       draggable: false,
+      timeout: false,
     })
   })
 

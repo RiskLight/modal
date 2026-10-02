@@ -235,3 +235,28 @@ describe('createDialogItem keeps the surface in shape', () => {
     expect(document.activeElement).toBe(opener)
   })
 })
+
+describe('createDialogItem surface focus', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('makes the surface programmatically focusable so clicks inside keep focus in the dialog', async () => {
+    const m = createModal()
+    const { root, surface } = build('<p>text</p><button>b</button>')
+    const item = createDialogItem(await m.push(A))
+    item.mount(root)
+    expect(surface.getAttribute('tabindex')).toBe('-1')
+    item.unmount()
+  })
+
+  it('keeps a tabindex the component set itself', async () => {
+    const m = createModal()
+    const { root, surface } = build('<button>b</button>')
+    surface.setAttribute('tabindex', '0')
+    const item = createDialogItem(await m.push(A))
+    item.mount(root)
+    expect(surface.getAttribute('tabindex')).toBe('0')
+    item.unmount()
+  })
+})

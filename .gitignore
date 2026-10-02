@@ -6,3 +6,5 @@ coverage/
 docs/.vitepress/dist
 docs/.vitepress/cache
 *.tgz
+playground/
+playground-react/

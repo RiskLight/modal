@@ -13,7 +13,7 @@ export default defineConfig({
         'dom/index': 'src/dom/index.ts',
         'vue/index': 'src/vue/index.ts',
         'compat/index': 'src/compat/index.ts',
-        'react/index': 'src/react/index.ts',
+        'react/index': 'src/react/index.tsx',
       },
       formats: ['es'],
       fileName: (_format, name) => `${name}.js`,

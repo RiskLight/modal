@@ -13,3 +13,14 @@ describe('vue-router stays optional', () => {
     expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]vue-router['"]/)
   })
 })
+
+describe('adapters stay separate', () => {
+  it.each(files('src/vue').concat(files('src/compat')))('%s does not import react', path => {
+    expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]react/)
+  })
+
+  it.each(files('src/react'))('%s does not import vue', path => {
+    expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"](vue|vue-router)['"]/)
+    expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"]\.\.\/(vue|compat)\//)
+  })
+})

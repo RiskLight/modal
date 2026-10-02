@@ -342,3 +342,100 @@ describe('behaviour', () => {
     expect(modal.core.get(handle.id)).toBe(handle)
   })
 })
+
+describe('review fixes', () => {
+  it('renders once when the component touches its handle while rendering', async () => {
+    const modal = createVanillaModal()
+    let renders = 0
+    await modal.push((_props, handle) => {
+      renders++
+      handle.on('save', () => {})
+      handle.draggable = true
+      return document.createElement('section')
+    })
+    await flush()
+    expect(renders).toBe(1)
+    expect(document.querySelectorAll('.modal-container')).toHaveLength(1)
+  })
+
+  it('stays consistent when a component opens and closes modals while rendering', async () => {
+    const modal = createVanillaModal()
+    const first = await modal.push(Title, { title: 'first' })
+    await modal.push(() => {
+      void first.close()
+      void modal.push(Title, { title: 'nested' })
+      return document.createElement('section')
+    })
+    await flush()
+    expect([...document.querySelectorAll('.title')].map(el => el.textContent)).toEqual(['nested'])
+    expect(document.querySelectorAll('.modal-container')).toHaveLength(2)
+  })
+
+  it('wraps string and fragment output in a dialog surface', async () => {
+    const modal = createVanillaModal()
+    await modal.push(() => 'plain text')
+    const fragment = document.createDocumentFragment()
+    fragment.append(document.createElement('p'), document.createElement('p'))
+    await modal.push(() => fragment)
+    const surfaces = [...document.querySelectorAll('.modal-container')].map(root => root.firstElementChild!)
+    for (const surface of surfaces) {
+      expect(surface.getAttribute('role')).toBe('dialog')
+      expect(surface.classList.contains('modal-item')).toBe(true)
+    }
+    expect(surfaces[0]!.textContent).toBe('plain text')
+    expect(surfaces[1]!.querySelectorAll('p')).toHaveLength(2)
+  })
+
+  it('accepts nodes created by another document', async () => {
+    const modal = createVanillaModal()
+    const foreign = document.implementation.createHTMLDocument('x').createElement('article')
+    foreign.textContent = 'foreign'
+    await modal.push(() => foreign)
+    expect(document.querySelector('.modal-container')!.textContent).toBe('foreign')
+  })
+
+  it('does not leave an empty trapped dialog when the component throws', async () => {
+    const reported = vi.fn()
+    const original = globalThis.reportError
+    globalThis.reportError = reported
+    const page = document.createElement('main')
+    document.body.append(page)
+    try {
+      const modal = createVanillaModal()
+      const handle = await modal.push(() => {
+        throw new Error('boom')
+      })
+      expect(document.querySelectorAll('.modal-container')).toHaveLength(0)
+      await flush()
+      expect(handle.closed).toBe(true)
+      expect(page.inert).toBe(false)
+    } finally {
+      globalThis.reportError = original
+    }
+  })
+
+  it('returns focus to the opener on dispose', async () => {
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    opener.focus()
+    const modal = create()
+    await modal.push(Focusable)
+    expect(document.activeElement?.id).toBe('first')
+    modal.dispose()
+    await flush()
+    expect(document.activeElement).toBe(opener)
+  })
+
+  it('rejects instead of throwing when the auto mount target is missing', async () => {
+    const modal = createVanillaModal({ autoMount: '#nowhere' })
+    let thrown = false
+    let pending: Promise<unknown> | undefined
+    try {
+      pending = modal.push(Title)
+    } catch {
+      thrown = true
+    }
+    expect(thrown).toBe(false)
+    await expect(pending).rejects.toThrow(/#nowhere/)
+  })
+})

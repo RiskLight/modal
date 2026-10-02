@@ -32,10 +32,21 @@ function resolveTarget(target: Element | string | undefined): Element {
   return found
 }
 
+function isRendered(output: unknown): output is VanillaRendered {
+  return typeof output === 'object' && output !== null && 'element' in output
+}
+
+function asSurface(node: Node): Node {
+  if (node.nodeType === 1) return node
+  const surface = document.createElement('div')
+  surface.append(node)
+  return surface
+}
+
 function toNode(output: Node | string | VanillaRendered): { element: Node; destroy: (() => void) | undefined } {
-  if (typeof output === 'string') return { element: document.createTextNode(output), destroy: undefined }
-  if (output instanceof Node) return { element: output, destroy: undefined }
-  return { element: output.element, destroy: output.destroy }
+  if (typeof output === 'string') return { element: asSurface(document.createTextNode(output)), destroy: undefined }
+  if (isRendered(output)) return { element: asSurface(output.element), destroy: output.destroy }
+  return { element: asSurface(output), destroy: undefined }
 }
 
 export function createVanillaModal(options: VanillaModalCreateOptions = {}): VanillaModalManager {
@@ -72,7 +83,7 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
     const exclude = [`[${HOST_ATTRIBUTE}]`, allowOutside].filter(Boolean).join(', ')
     let releaseInert: (() => void) | undefined
 
-    const render = (handle: Handle): Rendered => {
+    const render = (handle: Handle): void => {
       const root = document.createElement('div')
       root.className = 'modal-container widget__modal-container__item'
       const dialog = createDialogItem(handle, {
@@ -82,20 +93,22 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
         labels: dialogLabelAttrs(handle.extra),
         surfaceClass: SURFACE_CLASS,
       })
+      const entry: Rendered = { root, dialog, destroy: undefined }
+      rendered.set(handle, entry)
       root.addEventListener('pointerdown', event => dialog.pointerdown(event))
       root.addEventListener('click', event => dialog.click(event))
-      let destroy: (() => void) | undefined
       try {
         const output = toNode(handle.component(handle.props, handle))
+        entry.destroy = output.destroy
         root.append(output.element)
-        destroy = output.destroy
       } catch (error) {
         report(error)
         handle.close().catch(noop)
+        return
       }
+      if (handle.closed) return
       host.append(root)
       dialog.mount(root)
-      return { root, dialog, destroy }
     }
 
     const remove = (entry: Rendered) => {
@@ -108,7 +121,10 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
       entry.root.remove()
     }
 
-    const sync = () => {
+    let syncing = false
+    let dirty = false
+
+    const pass = () => {
       const { items, options: namespaceOptions } = core.getSnapshot(namespace)
       const wanted = trapFocus && items.length > 0
       if (!wanted && releaseInert) {
@@ -116,14 +132,16 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
         releaseInert = undefined
       }
       for (const [handle, entry] of rendered) {
-        if (items.includes(handle)) continue
+        if (items.includes(handle) && !handle.closed) continue
         rendered.delete(handle)
         remove(entry)
       }
       const last = items.length - 1
       items.forEach((handle, index) => {
-        const entry = rendered.get(handle) ?? render(handle)
-        rendered.set(handle, entry)
+        if (handle.closed) return
+        if (!rendered.has(handle)) render(handle)
+        const entry = rendered.get(handle)
+        if (!entry || handle.closed) return
         const active = !namespaceOptions.singleShow || index === last
         entry.root.style.display = active ? '' : 'none'
         entry.dialog.update({ active })
@@ -131,10 +149,26 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
       if (wanted && !releaseInert) releaseInert = inertOutside(host, { exclude })
     }
 
+    const sync = () => {
+      if (syncing) {
+        dirty = true
+        return
+      }
+      syncing = true
+      try {
+        do {
+          dirty = false
+          pass()
+        } while (dirty && mounted)
+      } finally {
+        syncing = false
+      }
+    }
+
+    let mounted = true
     const unsubscribe = core.subscribe(sync)
     sync()
 
-    let mounted = true
     const unmount = () => {
       if (!mounted) return
       mounted = false
@@ -152,6 +186,15 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
     return unmount
   }
 
+  function prepare(namespace: Namespace | undefined): Promise<void> {
+    try {
+      ensureHost(namespace)
+      return Promise.resolve()
+    } catch (error) {
+      return Promise.reject(error)
+    }
+  }
+
   function ensureHost(namespace: Namespace | undefined): void {
     if (autoMount === false || typeof document === 'undefined') return
     const key = namespace || DEFAULT_NAMESPACE
@@ -164,20 +207,17 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
     core,
     mount,
     open(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
-      ensureHost(opts?.namespace)
-      return core.open(target, props, opts)
+      return prepare(opts?.namespace).then(() => core.open(target, props, opts))
     },
     push(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
-      ensureHost(opts?.namespace)
-      return core.push(target, props, opts)
+      return prepare(opts?.namespace).then(() => core.push(target, props, opts))
     },
     prompt(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
-      ensureHost(opts?.namespace)
-      return core.prompt(target, props, opts)
+      return prepare(opts?.namespace).then(() => core.prompt(target, props, opts))
     },
     dispose() {
-      for (const unmount of Array.from(mounts)) unmount()
       core.dispose()
+      for (const unmount of Array.from(mounts)) unmount()
     },
   } as VanillaModalManager
 }

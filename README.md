@@ -4,13 +4,12 @@
 [![CI](https://github.com/RiskLight/modal/actions/workflows/ci.yml/badge.svg)](https://github.com/RiskLight/modal/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@risklight/modal.svg)](./LICENSE)
 
-A modal stack with a framework-agnostic core, close guards, typed prompts, and adapters for Vue 3 (including Nuxt) and React. It is a rewrite of [jenesius-vue-modal](https://github.com/Jenesius/vue-modal), and `@risklight/modal/compat` keeps that library's API, so you can migrate by changing the import.
+A modal stack with a framework-agnostic core, close guards, typed prompts, and adapters for Vue 3 (including Nuxt) and React. It started as a rewrite of [jenesius-vue-modal](https://github.com/Jenesius/vue-modal).
 
 - **Core** (`@risklight/modal`): namespaces, a stack per namespace, `beforeOpen` hooks, close guards, a registry, prompts and stable snapshots. It does not import Vue or touch the DOM.
 - **DOM** (`@risklight/modal/dom`): Escape handling, scroll lock with scrollbar compensation, a focus trap stack and dragging. Every function returns a disposer.
 - **Vue** (`@risklight/modal/vue`): the `createVueModal()` plugin, `<ModalContainer>`, composables and vue-router integration. It works in Nuxt as is.
 - **React** (`@risklight/modal/react`): `createReactModal()`, `<ModalProvider>`, `<ModalContainer>` and hooks.
-- **Compat** (`@risklight/modal/compat`): `openModal`, `pushModal`, `promptModal`, `container`, `config`, `useModalRouter` and the rest of the jenesius-vue-modal API.
 
 Requirements: Node 22.12+ and ESM only. `vue` (3.3 or later), `vue-router` (4 or 5) and `react` (18 or 19) are optional peer dependencies. Install only the one you use.
 
@@ -86,7 +85,7 @@ Props can be a plain object, a `ref`, a `reactive`, a `computed` or a getter, an
 | `appear` | `true` | `TransitionGroup` appear. |
 | `trapFocus` | `true` | Moves focus into the visible modal, keeps it there, makes the rest of the page `inert`, and returns focus on close. Set it to `false` for non-modal stacks such as toasts. |
 | `behaviors` | `true` | Escape and scroll lock, bound once per manager. Read at mount. |
-| `escapeEvent` | `'keydown'` | `'keyup'` restores the jenesius-vue-modal behaviour. |
+| `escapeEvent` | `'keydown'` | Which key event closes the top modal: `'keydown'` or `'keyup'`. |
 | `allowOutside` | none | CSS selector for elements outside the modal that must stay usable while it is open, such as popovers, menus and toasts that a UI library renders into `<body>`. They are left out of `inert`, focus may move into them, and an Escape pressed inside them is left to them. |
 | `backdropTrigger` | `'click'` | Closes when both press and release land on the backdrop. `'pointerdown'` closes on press. |
 | `unstyled` | `false` | Skips injecting the default styles. You can import `@risklight/modal/style.css` instead. |
@@ -212,48 +211,7 @@ modals.subscribe(() => render(modals.getSnapshot()))
 
 `getSnapshot(namespace)` returns a frozen object that keeps the same reference until something changes, so it can be used directly with `useSyncExternalStore`. `createDialogItem` in `@risklight/modal/dom` holds the dialog behaviour that both adapters share: accessible labelling, focus trap, backdrop closing and dragging.
 
-## Migrating from jenesius-vue-modal
-
-Change the import:
-
-```diff
-- import { container, openModal, pushModal, promptModal, config } from 'jenesius-vue-modal'
-+ import { container, openModal, pushModal, promptModal, config } from '@risklight/modal/compat'
-```
-
-The upstream test suite is ported in `test/compat` and passes. You don't need `app.use()`: `container` works on its own and default styles are injected automatically.
-
-| jenesius-vue-modal | compat | New API |
-|---|---|---|
-| `openModal / pushModal` | same | `modal.open / modal.push` |
-| `promptModal` | same | `modal.prompt<R>()` |
-| `popModal / closeModal / closeById` | same | `modal.pop / modal.closeAll / modal.closeById` |
-| `config({ beforeEach })` | same | `defaults.beforeOpen` |
-| `config({ store })` | same | `registry`, `register()` |
-| `config({ skipInitCheck })` | same | `requireHost: false` |
-| `modal.onclose = fn` | same | `handle.onBeforeClose(fn)` |
-| `modal.ondestroy = fn` | same | `handle.onClosed(fn)` |
-| `modal.closed.value` | same | `handle.closed` or `useModalSnapshot()` |
-| `Modal.EVENT_PROMPT` emit | same | `useModalResolve()` or `PROMPT_EVENT` |
-| `onBeforeModalClose` | same | same, but throws outside a modal |
-| `useModalRouter(c)` + `.init(router)` | same | `createModalRoute(c)` + `installModalRouter(router, modal)` |
-| `container` | same | `<ModalContainer>` |
-
-`modalManager` from `@risklight/modal/compat` is the manager behind the compat API. You can use the new API on the same stack while you migrate.
-
-### Behaviour changes
-
-- **Double close.** Closing a modal twice, for example a double Escape with an async guard, no longer closes the modal underneath. Concurrent closes share one promise.
-- **Memory.** Closed modals are removed from `Modal.STORE`.
-- **`onBeforeModalClose` outside a modal** now throws instead of silently guarding modal 0.
-- **Escape and scroll lock** work in every mounted namespace. Scroll lock restores the previous inline `overflow` and `padding-right` and compensates for the scrollbar width.
-- **Router.** Route records without `components` no longer crash. Calling `useModalRouter.init` twice does nothing instead of throwing.
-- **`closeModal` order.** It closes modals top-down.
-- **Registry options.** Per-open options take precedence over store entry options.
-- **Defaults kept from jenesius-vue-modal.** The compat `container` keeps `keyup` for Escape and `pointerdown` for the backdrop.
-- **SSR.** Compat holds one module-level manager, so use it on the client only. For SSR, create a `createVueModal()` instance per request.
-
-### Notes
+## Notes
 
 - **`reset()` and `dispose()`** drop modals without running guards or `onClosed` listeners. Pending `result` promises resolve with `null`.
 - **Registry entries.** An object with its own `component` key is treated as a registry entry. Any other value is treated as the component itself.

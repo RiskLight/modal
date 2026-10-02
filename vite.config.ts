@@ -12,7 +12,6 @@ export default defineConfig({
         'index': 'src/index.ts',
         'dom/index': 'src/dom/index.ts',
         'vue/index': 'src/vue/index.ts',
-        'compat/index': 'src/compat/index.ts',
         'react/index': 'src/react/index.tsx',
       },
       formats: ['es'],

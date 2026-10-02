@@ -126,7 +126,7 @@ describe('ModalContainer rendering', () => {
     expect(surfaces[1]!.attributes('aria-labelledby')).toBeUndefined()
   })
 
-  it('keeps upstream class names for styling compatibility', async () => {
+  it('keeps stable class names for styling', async () => {
     const modal = createVueModal()
     const wrapper = mountContainer(modal)
     await modal.push(Title)

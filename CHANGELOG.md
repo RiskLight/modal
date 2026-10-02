@@ -2,7 +2,7 @@
 
 ## 0.1.0
 
-First release. It is a rewrite of jenesius-vue-modal 1.11.9.
+First release. It started as a rewrite of jenesius-vue-modal 1.11.9.
 
 - **Core** (`@risklight/modal`):
   - framework-agnostic manager with namespaces and frozen snapshots that keep the same reference until something changes;
@@ -18,15 +18,6 @@ First release. It is a rewrite of jenesius-vue-modal 1.11.9.
   - composables;
   - vue-router integration without a runtime dependency on `vue-router`.
 - **`allowOutside`** on the Vue and React containers (and on `trapFocus`, `bindEscape` and the dialog item in `./dom`): a selector for popovers, menus and toasts rendered outside the modal. They stay out of `inert`, can receive focus, and handle their own Escape.
-- **Compat** (`@risklight/modal/compat`): the jenesius-vue-modal API, with the upstream test suite ported.
-- **Upstream bugs fixed:**
-  - a double close removed the modal underneath;
-  - closed modals leaked;
-  - `onBeforeModalClose` outside a modal attached to modal 0;
-  - Escape and scroll lock worked only in the default namespace;
-  - scroll lock overwrote inline styles;
-  - the router crashed on records without `components`;
-  - `promptModal` was untyped.
 - **Build:** Vite 8 (rolldown) for the library build, vitest 5, oxlint, CI on Node 22 and 24, releases through npm trusted publishing with provenance.
 - **Accessibility:**
   - `role="dialog"` is on the modal surface.

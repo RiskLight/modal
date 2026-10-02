@@ -20,7 +20,7 @@ export default defineConfig({
           setupFiles: ['test/setup-browser.ts'],
           alias: { vue: 'vue/dist/vue.esm-bundler.js' },
           css: { include: [/style\.css/] },
-          include: ['test/{dom,vue,compat}/**/*.spec.ts'],
+          include: ['test/{dom,vue}/**/*.spec.ts'],
         },
       },
       {

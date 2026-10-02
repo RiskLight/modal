@@ -13,7 +13,7 @@ const sources = [...files('src/core'), 'src/index.ts'].map(path => ({ path, text
 describe('core purity', () => {
   it.each(sources.map(s => [s.path, s.text]))('%s imports no framework', (_path, text) => {
     expect(text).not.toMatch(/from\s+['"](vue|vue-router|react|react-dom)(\/[^'"]*)?['"]/)
-    expect(text).not.toMatch(/from\s+['"]\.\.\/(vue|dom|compat|react)\//)
+    expect(text).not.toMatch(/from\s+['"]\.\.\/(vue|dom|react)\//)
   })
 
   it.each(sources.map(s => [s.path, s.text]))('%s touches no DOM global', (_path, text) => {

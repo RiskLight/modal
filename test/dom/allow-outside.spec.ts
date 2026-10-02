@@ -139,6 +139,21 @@ describe('allowOutside edge cases', () => {
     release()
   })
 
+  it('leaves focus alone on later DOM changes once it is back in the modal or still in the popover', async () => {
+    const get = setup()
+    const release = trapFocus(get('modal'), { allowOutside: POPOVER })
+    addPopover()
+    get('listbox').focus()
+    document.body.append(document.createElement('span'))
+    await flush()
+    expect(document.activeElement?.id).toBe('listbox')
+    get('inside').focus()
+    document.body.append(document.createElement('span'))
+    await flush()
+    expect(document.activeElement?.id).toBe('inside')
+    release()
+  })
+
   it('combines allowOutside of every holder of the shared behaviors', async () => {
     const get = setup()
     const m = createModal()

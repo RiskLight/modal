@@ -317,6 +317,57 @@ describe('router review fixes', () => {
     dispose()
   })
 
+  it('does not open a waiting route modal after the user navigated elsewhere', async () => {
+    const modal = createVueModal()
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: Home }, { path: '/m', component: createModalRoute(RouteModal) }] })
+    const dispose = installModalRouter(router, modal)
+    await router.push('/m')
+    await flush()
+    await router.push('/')
+    await flush()
+    const App = defineComponent({ render: () => h('div', [h(RouterView), h(ModalContainer)]) })
+    const wrapper = mount(App, { global: { plugins: [router, modal] }, attachTo: document.body })
+    await flush()
+    expect(wrapper.find('.route-modal').exists()).toBe(false)
+    expect(modal.getSnapshot().items).toHaveLength(0)
+    dispose()
+  })
+
+  it('does not open when the route changed while a host was attaching elsewhere', async () => {
+    const modal = createVueModal()
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: Home }, { path: '/m', component: createModalRoute(RouteModal) }] })
+    const dispose = installModalRouter(router, modal)
+    await router.push('/m')
+    await flush()
+    const replace = vi.spyOn(router.currentRoute, 'value', 'get').mockReturnValue({ ...router.currentRoute.value, fullPath: '/elsewhere' })
+    const detach = modal.attachHost()
+    replace.mockRestore()
+    await flush()
+    expect(modal.getSnapshot().items).toHaveLength(0)
+    detach()
+    dispose()
+  })
+
+  it('reports unexpected open failures without blocking navigation', async () => {
+    const reported = vi.fn()
+    const original = globalThis.reportError
+    globalThis.reportError = reported
+    try {
+      const modal = createVueModal({ requireHost: false })
+      const Boom = createModalRoute(RouteModal, { beforeOpen: () => { throw new Error('boom') } })
+      const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: Home }, { path: '/b', component: Boom }] })
+      const dispose = installModalRouter(router, modal)
+      await router.push('/b')
+      await flush()
+      expect(reported).toHaveBeenCalledWith(expect.objectContaining({ message: 'boom' }))
+      await router.push('/')
+      expect(router.currentRoute.value.path).toBe('/')
+      dispose()
+    } finally {
+      globalThis.reportError = original
+    }
+  })
+
   it('throws when installed on the same router with another manager', () => {
     const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: Home }] })
     const dispose = installModalRouter(router, createVueModal())

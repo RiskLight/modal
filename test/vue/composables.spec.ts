@@ -25,7 +25,7 @@ describe('useCurrentModal and onBeforeModalClose', () => {
     const b = await modal.push(guarded(() => true))
     await b.close()
     expect(seenA).toHaveLength(0)
-    await expect(a.close()).rejects.toMatchObject({ code: 'guard-rejected' })
+    await expect(a.close()).resolves.toBe(false)
     expect(seenA).toHaveLength(1)
   })
 
@@ -53,7 +53,7 @@ describe('useCurrentModal and onBeforeModalClose', () => {
       },
     })
     const handle = await modal.push(Async)
-    await expect(handle.close()).rejects.toMatchObject({ code: 'guard-rejected' })
+    await expect(handle.close()).resolves.toBe(false)
     allow = true
     await handle.close()
     expect(handle.closed).toBe(true)

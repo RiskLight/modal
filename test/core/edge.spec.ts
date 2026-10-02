@@ -40,11 +40,11 @@ describe('error reporting fallback', () => {
 })
 
 describe('closed handles', () => {
-  it('rejects resolve with not-found', async () => {
+  it('resolves resolve with false', async () => {
     const m = createModal()
     const h = await m.push(A)
     await h.close()
-    await expect(h.resolve(1 as never)).rejects.toMatchObject({ code: 'not-found' })
+    await expect(h.resolve(1 as never)).resolves.toBe(false)
   })
 
   it('ignores guards and closed listeners added after close', async () => {

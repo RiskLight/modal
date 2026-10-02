@@ -19,7 +19,7 @@ describe('useCurrentModal and useBeforeModalClose', () => {
     const b = await act(() => modal.push(Guarded, { verdict: () => true }))
     await act(() => b.close())
     expect(seenA).toHaveLength(0)
-    await act(() => expect(a.close({ esc: true })).rejects.toMatchObject({ code: 'guard-rejected' }))
+    await act(() => expect(a.close({ esc: true })).resolves.toBe(false))
     expect(seenA).toEqual([{ background: false, esc: true, route: false }])
   })
 
@@ -28,7 +28,7 @@ describe('useCurrentModal and useBeforeModalClose', () => {
     renderContainer(modal)
     let allow = false
     const handle = await act(() => modal.push(Guarded, { verdict: () => allow }))
-    await act(() => expect(handle.close()).rejects.toMatchObject({ code: 'guard-rejected' }))
+    await act(() => expect(handle.close()).resolves.toBe(false))
     allow = true
     await act(() => handle.close())
     expect(handle.closed).toBe(true)

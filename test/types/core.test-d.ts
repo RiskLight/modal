@@ -28,6 +28,16 @@ describe('core types', () => {
     expectTypeOf<import('../../src').ModalCloseEvent>().toEqualTypeOf<{ background: boolean; esc: boolean; route: boolean }>()
   })
 
+  it('types close results as booleans', () => {
+    const m = createModal<Comp>()
+    type H = ModalHandle<Comp, string>
+    expectTypeOf<ReturnType<H['close']>>().toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf<ReturnType<H['resolve']>>().toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf(m.pop()).toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf(m.closeAll()).toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf(m.closeById(1)).toEqualTypeOf<Promise<boolean>>()
+  })
+
   it('types snapshots', () => {
     const m = createModal<Comp>()
     expectTypeOf(m.getSnapshot()).toEqualTypeOf<NamespaceSnapshot<Comp>>()

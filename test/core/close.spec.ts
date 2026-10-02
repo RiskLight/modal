@@ -11,11 +11,11 @@ describe('handle.close', () => {
     expect(m.getSnapshot().items).toEqual([])
   })
 
-  it('rejects with not-found when closing an already closed modal', async () => {
+  it('resolves false when closing an already closed modal', async () => {
     const m = createModal()
     const h = await m.push(A)
-    await h.close()
-    await expect(h.close()).rejects.toMatchObject({ code: 'not-found' })
+    await expect(h.close()).resolves.toBe(true)
+    await expect(h.close()).resolves.toBe(false)
   })
 
   it('removes the right modal from the middle of the stack', async () => {
@@ -70,9 +70,7 @@ describe('close guards', () => {
     const m = createModal()
     const h = await m.push(A)
     h.onBeforeClose(() => false)
-    const error = await h.close().catch(e => e)
-    expect(error).toBeInstanceOf(ModalError)
-    expect(error.code).toBe('guard-rejected')
+    await expect(h.close()).resolves.toBe(false)
     expect(h.status).toBe('open')
     expect(m.getSnapshot().items).toEqual([h])
   })
@@ -81,7 +79,7 @@ describe('close guards', () => {
     const m = createModal()
     const h = await m.push(A)
     h.onBeforeClose(async () => false)
-    await expect(h.close()).rejects.toMatchObject({ code: 'guard-rejected' })
+    await expect(h.close()).resolves.toBe(false)
     expect(h.closed).toBe(false)
   })
 
@@ -198,7 +196,7 @@ describe('close guards', () => {
     const component = { beforeModalClose: guard }
     const m = createModal<typeof component>({ guardFrom: c => c.beforeModalClose })
     const h = await m.push(component)
-    await expect(h.close()).rejects.toMatchObject({ code: 'guard-rejected' })
+    await expect(h.close()).resolves.toBe(false)
     expect(guard).toHaveBeenCalledOnce()
   })
 
@@ -279,9 +277,9 @@ describe('manager close helpers', () => {
     expect(guard).toHaveBeenCalledWith({ background: false, esc: true, route: false })
   })
 
-  it('closeById rejects with not-found for unknown ids', async () => {
+  it('closeById resolves false for unknown ids', async () => {
     const m = createModal()
-    await expect(m.closeById(42)).rejects.toMatchObject({ code: 'not-found' })
+    await expect(m.closeById(42)).resolves.toBe(false)
   })
 
   it('closeById finds modals in any namespace', async () => {
@@ -300,9 +298,9 @@ describe('manager close helpers', () => {
     expect(a.closed).toBe(false)
   })
 
-  it('pop resolves when the namespace is empty', async () => {
+  it('pop resolves false when the namespace is empty', async () => {
     const m = createModal()
-    await expect(m.pop()).resolves.toBeUndefined()
+    await expect(m.pop()).resolves.toBe(false)
   })
 
   it('pop respects the namespace', async () => {
@@ -314,11 +312,11 @@ describe('manager close helpers', () => {
     expect(a.closed).toBe(false)
   })
 
-  it('pop rejects when the top guard vetoes', async () => {
+  it('pop resolves false when the top guard vetoes', async () => {
     const m = createModal()
     const h = await m.push(A)
     h.onBeforeClose(() => false)
-    await expect(m.pop()).rejects.toMatchObject({ code: 'guard-rejected' })
+    await expect(m.pop()).resolves.toBe(false)
   })
 
   it('closeAll closes top-down and empties the namespace', async () => {
@@ -339,7 +337,7 @@ describe('manager close helpers', () => {
     const b = await m.push(B)
     const c = await m.push(C)
     b.onBeforeClose(() => false)
-    await expect(m.closeAll()).rejects.toMatchObject({ code: 'guard-rejected' })
+    await expect(m.closeAll()).resolves.toBe(false)
     expect(c.closed).toBe(true)
     expect(m.getSnapshot().items).toEqual([a, b])
   })
@@ -353,9 +351,9 @@ describe('manager close helpers', () => {
     expect(a.closed).toBe(false)
   })
 
-  it('closeAll on an empty namespace resolves', async () => {
+  it('closeAll on an empty namespace resolves true', async () => {
     const m = createModal()
-    await expect(m.closeAll()).resolves.toBeUndefined()
+    await expect(m.closeAll()).resolves.toBe(true)
   })
 
   it('closeAll skips modals that were closed by someone else meanwhile', async () => {

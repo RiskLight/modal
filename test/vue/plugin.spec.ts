@@ -31,7 +31,7 @@ describe('createVueModal', () => {
   it('reads beforeModalClose from options API components', async () => {
     const modal = createVueModal({ requireHost: false })
     const h = await modal.push(OptionsGuard)
-    await expect(h.close()).rejects.toMatchObject({ code: 'guard-rejected' })
+    await expect(h.close()).resolves.toBe(false)
   })
 
   it('exposes the underlying core manager', async () => {

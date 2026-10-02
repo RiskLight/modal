@@ -44,7 +44,7 @@ describe('prompt', () => {
     const h = m.current()!
     let allow = false
     h.onBeforeClose(() => allow)
-    await expect(h.resolve(1 as never)).rejects.toMatchObject({ code: 'guard-rejected' })
+    await expect(h.resolve(1 as never)).resolves.toBe(false)
     await flush()
     expect(result.state).toBe('pending')
     allow = true

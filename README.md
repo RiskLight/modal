@@ -4,14 +4,15 @@
 [![CI](https://github.com/RiskLight/modal/actions/workflows/ci.yml/badge.svg)](https://github.com/RiskLight/modal/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/@risklight/modal.svg)](./LICENSE)
 
-A modal stack with a framework-agnostic core, close guards, typed prompts and a Vue 3 adapter. It is a rewrite of [jenesius-vue-modal](https://github.com/Jenesius/vue-modal), and `@risklight/modal/compat` keeps that library's API, so you can migrate by changing the import.
+A modal stack with a framework-agnostic core, close guards, typed prompts, and adapters for Vue 3 (including Nuxt) and React. It is a rewrite of [jenesius-vue-modal](https://github.com/Jenesius/vue-modal), and `@risklight/modal/compat` keeps that library's API, so you can migrate by changing the import.
 
 - **Core** (`@risklight/modal`): namespaces, a stack per namespace, `beforeOpen` hooks, close guards, a registry, prompts and stable snapshots. It does not import Vue or touch the DOM.
 - **DOM** (`@risklight/modal/dom`): Escape handling, scroll lock with scrollbar compensation, a focus trap stack and dragging. Every function returns a disposer.
-- **Vue** (`@risklight/modal/vue`): the `createVueModal()` plugin, `<ModalContainer>`, composables and vue-router integration.
+- **Vue** (`@risklight/modal/vue`): the `createVueModal()` plugin, `<ModalContainer>`, composables and vue-router integration. It works in Nuxt as is.
+- **React** (`@risklight/modal/react`): `createReactModal()`, `<ModalProvider>`, `<ModalContainer>` and hooks.
 - **Compat** (`@risklight/modal/compat`): `openModal`, `pushModal`, `promptModal`, `container`, `config`, `useModalRouter` and the rest of the jenesius-vue-modal API.
 
-Requirements: Node 22.12+ and ESM only. `vue` (3.3 or later) and `vue-router` (4 or 5) are optional peer dependencies.
+Requirements: Node 22.12+ and ESM only. `vue` (3.3 or later), `vue-router` (4 or 5) and `react` (18 or 19) are optional peer dependencies. Install only the one you use.
 
 ## Install
 
@@ -137,6 +138,51 @@ installModalRouter(router, modal)
 - **Server.** On the server, route modals are not opened.
 - **No dependency on vue-router.** The integration works with vue-router 4 and 5 through structural types, and `vue-router` is only needed if you use these functions.
 
+## React quick start
+
+```tsx
+import { createReactModal, ModalContainer, ModalProvider, useModal } from '@risklight/modal/react'
+
+const modal = createReactModal()
+
+export function App() {
+  return (
+    <ModalProvider manager={modal}>
+      <Page />
+      <ModalContainer />
+    </ModalProvider>
+  )
+}
+
+function Page() {
+  const modal = useModal()
+  return <button onClick={() => modal.prompt<boolean>(ConfirmDelete, { title: 'Delete?' })}>Delete</button>
+}
+```
+
+Inside a modal component:
+
+```tsx
+import { useBeforeModalClose, useCurrentModal, useModalResolve } from '@risklight/modal/react'
+
+function ConfirmDelete({ title }: { title: string }) {
+  const resolve = useModalResolve<boolean>()
+  useBeforeModalClose(event => (event.esc ? window.confirm('Discard?') : true))
+  return (
+    <div>
+      <h2>{title}</h2>
+      <button onClick={() => resolve(true)}>Yes</button>
+    </div>
+  )
+}
+```
+
+**Props and events.** Props are passed as a plain object and are typed from the component, so required props are required. Each listener added with `handle.on('save', fn)` is passed to the component as an `onSave` prop, together with any `onSave` you pass yourself.
+
+**Container behaviour.** `<ModalContainer>` accepts the same behaviour props as the Vue one: `namespace`, `trapFocus`, `behaviors`, `escapeEvent`, `backdropTrigger`, `unstyled`, `nonce` and `manager`. Any other HTML attributes go to the host `<div>`. It renders where you place it and does not use a portal.
+
+**Hooks.** `useModalSnapshot(namespace?)` re-renders on changes through `useSyncExternalStore`, and it works with SSR.
+
 ## Core without a framework
 
 ```ts
@@ -149,7 +195,7 @@ const release = acquireBehaviors(modals)
 modals.subscribe(() => render(modals.getSnapshot()))
 ```
 
-`getSnapshot(namespace)` returns a frozen object that keeps the same reference until something changes, so it can be used directly with `useSyncExternalStore`.
+`getSnapshot(namespace)` returns a frozen object that keeps the same reference until something changes, so it can be used directly with `useSyncExternalStore`. `createDialogItem` in `@risklight/modal/dom` holds the dialog behaviour that both adapters share: accessible labelling, focus trap, backdrop closing and dragging.
 
 ## Migrating from jenesius-vue-modal
 

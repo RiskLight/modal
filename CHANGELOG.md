@@ -42,4 +42,4 @@ First release. It is a rewrite of jenesius-vue-modal 1.11.9.
   - `exports` has a `default` condition, so `require()` works.
   - CSS is listed in `sideEffects`.
   - The `.d.ts` files no longer depend on `vue-router`.
-
+- **React** (`@risklight/modal/react`): `createReactModal()`, `ModalProvider`, `ModalContainer`, and the hooks `useModal`, `useCurrentModal`, `useBeforeModalClose`, `useModalResolve` and `useModalSnapshot` (on `useSyncExternalStore`). Dialog behaviour is shared with Vue through `createDialogItem` in `@risklight/modal/dom`.

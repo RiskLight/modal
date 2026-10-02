@@ -6,6 +6,7 @@ import { acquireBehaviors } from '../dom/behaviors.js'
 import { createDialogItem, dialogLabelAttrs, type DialogItem } from '../dom/dialog.js'
 import { inertOutside } from '../dom/inert.js'
 import { injectStyles } from '../dom/styles.js'
+import { createVanillaRouter } from './router.js'
 import { findPageTemplate, fromTemplate } from './template.js'
 import type { MountOptions, VanillaComponent, VanillaModalCreateOptions, VanillaModalManager, VanillaRendered } from './types.js'
 
@@ -229,10 +230,17 @@ export function createVanillaModal(options: VanillaModalCreateOptions = {}): Van
     mount(autoMount === true ? undefined : autoMount, { namespace: key })
   }
 
+  const router = createVanillaRouter(core, (target, namespace) => {
+    registerPageTemplate(target)
+    ensureHost(namespace)
+  })
+
   const manager: VanillaModalManager = {
     ...core,
     core,
     mount,
+    routes: (definitions, routerOptions = {}) => router.start(definitions, routerOptions),
+    navigate: (to, navigateOptions) => router.navigate(to, navigateOptions),
     open<R = unknown>(target: ModalTarget<VanillaComponent>, props?: unknown, opts?: ModalOptions<VanillaComponent>) {
       return prepare(target, opts?.namespace).then(() => core.open<R>(target, props, opts))
     },

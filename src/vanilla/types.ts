@@ -41,9 +41,36 @@ export interface VanillaModalManager extends Omit<ModalManager<VanillaComponent>
   prompt<R = unknown, T extends VanillaComponent = VanillaComponent>(component: T, ...args: VanillaModalArgs<T>): Promise<R | null>
   prompt<R = unknown>(name: string, ...args: VanillaNamedModalArgs): Promise<R | null>
   mount(target?: Element | string, options?: MountOptions): () => void
+  routes(definitions: Readonly<Record<string, VanillaRouteTarget>>, options?: VanillaRouterOptions): () => void
+  navigate(to: string, options?: VanillaNavigateOptions): Promise<boolean>
   readonly core: ModalManager<VanillaComponent>
 }
 
 export interface VanillaModalCreateOptions extends CreateModalOptions<VanillaComponent> {
   autoMount?: boolean | Element | string | undefined
+}
+
+export interface VanillaRouteMatch {
+  path: string
+  params: Readonly<Record<string, string>>
+  query: Readonly<Record<string, string>>
+}
+
+export interface VanillaRouteDefinition extends VanillaModalOptions {
+  modal: VanillaComponent | string
+  props?: ((match: VanillaRouteMatch) => Record<string, unknown>) | undefined
+  mode?: 'open' | 'push' | undefined
+  fallback?: string | undefined
+}
+
+export type VanillaRouteTarget = VanillaComponent | string | VanillaRouteDefinition
+
+export interface VanillaRouterOptions {
+  mode?: 'history' | 'hash' | undefined
+  fallback?: string | undefined
+  links?: boolean | undefined
+}
+
+export interface VanillaNavigateOptions {
+  replace?: boolean | undefined
 }
